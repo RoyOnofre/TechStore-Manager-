@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, MoreVertical, Eye, Calendar, ShoppingBag, CreditCard, User, TrendingUp } from 'lucide-react';
 import { MOCK_SALES } from '../constants';
 import { UserRole } from '../types';
@@ -8,10 +8,35 @@ interface SalesHistoryScreenProps {
 }
 
 const SalesHistoryScreen: React.FC<SalesHistoryScreenProps> = ({ userRole }) => {
+  const [sales, setSales] = useState<any[]>([]);
+  const [customerName, setCustomerName] = useState('Alejandro Moreno');
+
+  useEffect(() => {
+    // Load customer name
+    const savedProfile = localStorage.getItem(`profile_${userRole}`);
+    if (savedProfile) {
+      const parsed = JSON.parse(savedProfile);
+      setCustomerName(parsed.name || 'Alejandro Moreno');
+    }
+
+    // Load sales from localStorage
+    const savedSales = JSON.parse(localStorage.getItem('sales_history') || '[]');
+    
+    // Convert saved sales to match table format if needed
+    const formattedSavedSales = savedSales.map((s: any) => ({
+      ...s,
+      items: s.items.length, // Just count for the table
+      status: 'Completada',
+      paymentMethod: 'Efectivo' // Default for now
+    }));
+
+    setSales([...formattedSavedSales, ...MOCK_SALES]);
+  }, [userRole]);
+
   // Filter sales if user is a client (simulation)
   const filteredSales = userRole === 'cliente' 
-    ? MOCK_SALES.filter(s => s.customer === 'Alejandro Moreno') // Assuming the logged in user is Alejandro
-    : MOCK_SALES;
+    ? sales.filter(s => s.customer === customerName)
+    : sales;
 
   return (
     <div className="p-8 space-y-8">

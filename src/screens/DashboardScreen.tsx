@@ -13,13 +13,14 @@ import {
   UserCheck
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { UserRole } from '../types';
+import { UserRole, Screen } from '../types';
 
 interface DashboardScreenProps {
   userRole: UserRole;
+  onNavigate?: (screen: Screen) => void;
 }
 
-const DashboardScreen: React.FC<DashboardScreenProps> = ({ userRole }) => {
+const DashboardScreen: React.FC<DashboardScreenProps> = ({ userRole, onNavigate }) => {
   const renderAdminDashboard = () => (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -75,7 +76,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ userRole }) => {
               <Clock className="text-primary" size={20} />
               Actividad Reciente
             </h3>
-            <button className="text-xs font-bold text-primary hover:underline uppercase tracking-widest">Ver todo</button>
+            <button 
+              onClick={() => onNavigate?.('sales-history')}
+              className="text-xs font-bold text-primary hover:underline uppercase tracking-widest"
+            >
+              Ver todo
+            </button>
           </div>
           <div className="space-y-6">
             <ActivityItem 
@@ -126,7 +132,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ userRole }) => {
           <p className="text-slate-400">Tu turno ha comenzado. ¡Que tengas excelentes ventas!</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="px-6 py-3 bg-primary text-background-dark rounded-2xl font-black flex items-center gap-2 glow-shadow cursor-pointer hover:scale-105 transition-all">
+          <div 
+            onClick={() => onNavigate?.('pos')}
+            className="px-6 py-3 bg-primary text-background-dark rounded-2xl font-black flex items-center gap-2 glow-shadow cursor-pointer hover:scale-105 transition-all"
+          >
             <ShoppingCart size={20} />
             ABRIR CAJA
           </div>
@@ -158,7 +167,15 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ userRole }) => {
       </div>
 
       <div className="glass-panel p-8 rounded-[32px] border border-primary/10">
-        <h3 className="text-xl font-bold text-white mb-8">Mis Últimas Transacciones</h3>
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xl font-bold text-white">Mis Últimas Transacciones</h3>
+          <button 
+            onClick={() => onNavigate?.('sales-history')}
+            className="text-xs font-bold text-primary hover:underline uppercase tracking-widest"
+          >
+            Ver todo
+          </button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -206,7 +223,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ userRole }) => {
               La Tecnología del <br /><span className="text-primary">Futuro</span> Hoy
             </h1>
             <p className="text-slate-300 max-w-md mb-6">Explora nuestra nueva colección de dispositivos premium con hasta 20% de descuento.</p>
-            <button className="px-8 py-3 bg-white text-background-dark font-black rounded-2xl hover:bg-primary transition-colors">Ver Catálogo</button>
+            <button 
+              onClick={() => onNavigate?.('inventory')}
+              className="px-8 py-3 bg-white text-background-dark font-black rounded-2xl hover:bg-primary transition-colors"
+            >
+              Ver Catálogo
+            </button>
           </motion.div>
         </div>
       </div>
@@ -218,7 +240,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ userRole }) => {
           </div>
           <h3 className="text-xl font-bold text-white mb-2">Mis Pedidos</h3>
           <p className="text-slate-400 text-sm mb-6">Rastrea tus compras y descarga tus facturas.</p>
-          <button className="text-primary font-bold text-sm uppercase tracking-widest hover:underline">Gestionar</button>
+          <button 
+            onClick={() => onNavigate?.('sales-history')}
+            className="text-primary font-bold text-sm uppercase tracking-widest hover:underline"
+          >
+            Gestionar
+          </button>
         </div>
         <div className="glass-panel p-8 rounded-[32px] border border-primary/10 flex flex-col items-center text-center">
           <div className="w-16 h-16 bg-violet-400/10 text-violet-400 rounded-2xl flex items-center justify-center mb-6">

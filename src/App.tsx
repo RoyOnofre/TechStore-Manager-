@@ -44,6 +44,30 @@ const App: React.FC = () => {
   const [userRole, setUserRole] = useState<UserRole>('admin');
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [currentUser, setCurrentUser] = useState({
+    name: 'Alejandro Moreno',
+    initials: 'AM',
+    avatar: null as string | null
+  });
+
+  // Load user profile and listen for updates
+  React.useEffect(() => {
+    const loadProfile = () => {
+      const savedUser = localStorage.getItem(`profile_${userRole}`);
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        setCurrentUser({
+          name: parsed.name || 'Usuario',
+          initials: (parsed.name || 'U').split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2),
+          avatar: parsed.avatar || null
+        });
+      }
+    };
+
+    loadProfile();
+    window.addEventListener('profileUpdated', loadProfile);
+    return () => window.removeEventListener('profileUpdated', loadProfile);
+  }, [userRole]);
 
   const navigateTo = (screen: Screen, productId?: string) => {
     if (productId) setSelectedProductId(productId);
@@ -85,21 +109,21 @@ const App: React.FC = () => {
       case 'register':
         return <RegisterScreen onBack={() => navigateTo('login')} />;
       case 'dashboard':
-        return <DashboardScreen userRole={userRole} />;
+        return <DashboardScreen userRole={userRole} onNavigate={navigateTo} />;
       case 'inventory':
-        return <InventoryScreen onSelectProduct={(id) => navigateTo('product-detail', id)} onAddProduct={() => navigateTo('add-product')} />;
+        return <InventoryScreen userRole={userRole} onSelectProduct={(id) => navigateTo('product-detail', id)} onAddProduct={() => navigateTo('add-product')} />;
       case 'product-detail':
-        return <ProductDetailScreen productId={selectedProductId || '1'} onBack={() => navigateTo('inventory')} />;
+        return <ProductDetailScreen productId={selectedProductId || '1'} userRole={userRole} onBack={() => navigateTo('inventory')} />;
       case 'add-product':
         return <AddProductScreen onBack={() => navigateTo('inventory')} />;
       case 'pos':
-        return <POSScreen />;
+        return <POSScreen userRole={userRole} />;
       case 'reports':
         return <ReportsScreen />;
       case 'profile':
-        return <ProfileScreen />;
+        return <ProfileScreen userRole={userRole} />;
       case 'sales-history':
-        return <SalesHistoryScreen />;
+        return <SalesHistoryScreen userRole={userRole} />;
       case 'settings':
         return <SettingsScreen />;
       case 'user-management':
@@ -111,8 +135,14 @@ const App: React.FC = () => {
 
   const showSidebar = !['login', 'register'].includes(currentScreen);
 
+  const getBgColor = () => {
+    if (userRole === 'cajero') return 'bg-[#0a1a1a]'; // Darker teal for cashier
+    if (userRole === 'cliente') return 'bg-[#1a1022]'; // Darker violet for client
+    return 'bg-background-dark';
+  };
+
   return (
-    <div className="min-h-screen flex bg-background-dark tech-pattern overflow-hidden">
+    <div className={`min-h-screen flex ${getBgColor()} tech-pattern transition-colors duration-500 overflow-hidden`}>
       {/* Sidebar */}
       <AnimatePresence>
         {showSidebar && isSidebarOpen && (
@@ -146,12 +176,32 @@ const App: React.FC = () => {
                     active={currentScreen === 'user-management'} 
                     onClick={() => navigateTo('user-management')}
                     roleColor={roleColor}
+                    badge="3"
                   />
                   <SidebarItem 
                     icon={<Package size={20} />} 
                     label="Inventario" 
                     active={currentScreen === 'inventory' || currentScreen === 'product-detail' || currentScreen === 'add-product'} 
                     onClick={() => navigateTo('inventory')}
+                    roleColor={roleColor}
+                  />
+                </>
+              )}
+
+              {userRole === 'cliente' && (
+                <>
+                  <SidebarItem 
+                    icon={<Package size={20} />} 
+                    label="Catálogo" 
+                    active={currentScreen === 'inventory'} 
+                    onClick={() => navigateTo('inventory')}
+                    roleColor={roleColor}
+                  />
+                  <SidebarItem 
+                    icon={<ShoppingCart size={20} />} 
+                    label="Tienda / Comprar" 
+                    active={currentScreen === 'pos'} 
+                    onClick={() => navigateTo('pos')}
                     roleColor={roleColor}
                   />
                 </>
@@ -169,7 +219,7 @@ const App: React.FC = () => {
 
               <SidebarItem 
                 icon={<History size={20} />} 
-                label={userRole === 'cliente' ? 'Mis Compras' : 'Historial de Ventas'} 
+                label={userRole === 'cliente' ? 'Mis Facturas' : 'Historial de Ventas'} 
                 active={currentScreen === 'sales-history'} 
                 onClick={() => navigateTo('sales-history')}
                 roleColor={roleColor}
@@ -309,14 +359,18 @@ const App: React.FC = () => {
 
               <div className={`flex items-center gap-3 pl-6 border-l ${roleBorderColor}`}>
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-semibold text-white">Alejandro Moreno</p>
+                  <p className="text-sm font-semibold text-white">{currentUser.name}</p>
                   <p className={`text-xs ${roleTextColor} uppercase font-bold tracking-widest`}>{userRole}</p>
                 </div>
                 <button 
                   onClick={() => navigateTo('profile')}
-                  className={`w-10 h-10 rounded-full ${userRole === 'admin' ? 'bg-primary/20 border-primary/30 text-primary' : userRole === 'cajero' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-500' : 'bg-violet-500/20 border-violet-500/30 text-violet-500'} border flex items-center justify-center font-bold hover:scale-110 transition-all`}
+                  className={`w-10 h-10 rounded-full ${userRole === 'admin' ? 'bg-primary/20 border-primary/30 text-primary' : userRole === 'cajero' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-500' : 'bg-violet-500/20 border-violet-500/30 text-violet-500'} border flex items-center justify-center font-bold hover:scale-110 transition-all overflow-hidden`}
                 >
-                  AM
+                  {currentUser.avatar ? (
+                    <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    currentUser.initials
+                  )}
                 </button>
               </div>
             </div>
@@ -348,9 +402,10 @@ interface SidebarItemProps {
   active?: boolean;
   onClick: () => void;
   roleColor?: string;
+  badge?: string;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, onClick, roleColor = 'primary' }) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, onClick, roleColor = 'primary', badge }) => {
   const activeBg = roleColor === 'primary' ? 'bg-primary' : roleColor === 'emerald-500' ? 'bg-emerald-500' : 'bg-violet-500';
   const hoverBg = roleColor === 'primary' ? 'hover:bg-primary/10' : roleColor === 'emerald-500' ? 'hover:bg-emerald-500/10' : 'hover:bg-violet-500/10';
   const hoverText = roleColor === 'primary' ? 'hover:text-primary' : roleColor === 'emerald-500' ? 'hover:text-emerald-500' : 'hover:text-violet-500';
@@ -358,14 +413,19 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, onClick,
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 ${
+      className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 relative ${
         active 
           ? `${activeBg} text-background-dark font-semibold glow-shadow` 
           : `text-slate-400 ${hoverBg} ${hoverText}`
       }`}
     >
       {icon}
-      <span className="text-sm">{label}</span>
+      <span className="text-sm flex-1 text-left">{label}</span>
+      {badge && (
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${active ? 'bg-background-dark text-white' : `${activeBg} text-background-dark`}`}>
+          {badge}
+        </span>
+      )}
     </button>
   );
 };

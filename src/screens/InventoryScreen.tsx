@@ -1,37 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Package, AlertTriangle, TrendingUp, DollarSign, Search, Filter, MoreHorizontal, Eye } from 'lucide-react';
 import { MOCK_PRODUCTS } from '../constants';
+
+import { UserRole, Product } from '../types';
 
 interface InventoryScreenProps {
   onSelectProduct: (id: string) => void;
   onAddProduct: () => void;
+  userRole: UserRole;
 }
 
-const InventoryScreen: React.FC<InventoryScreenProps> = ({ onSelectProduct, onAddProduct }) => {
+const InventoryScreen: React.FC<InventoryScreenProps> = ({ onSelectProduct, onAddProduct, userRole }) => {
+  const isAdmin = userRole === 'admin';
+  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+
+  useEffect(() => {
+    const addedProductsRaw = localStorage.getItem('added_products');
+    if (addedProductsRaw) {
+      const addedProducts = JSON.parse(addedProductsRaw);
+      // Map the simplified product from AddProductScreen to the Product type
+      const mappedProducts: Product[] = addedProducts.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        category: p.category,
+        price: parseFloat(p.price) || 0,
+        stock: parseInt(p.stock) || 0,
+        image: p.image || 'https://picsum.photos/seed/tech/400/400',
+        status: parseInt(p.stock) > 10 ? 'In Stock' : (parseInt(p.stock) > 0 ? 'Low Stock' : 'Out of Stock'),
+        description: p.description
+      }));
+      setProducts([...MOCK_PRODUCTS, ...mappedProducts]);
+    }
+  }, []);
+
   return (
     <div className="p-8 space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Inventario de Productos</h1>
-          <p className="text-slate-400">Control total de stock y disponibilidad</p>
+          <h1 className="text-3xl font-bold text-white">
+            {isAdmin ? 'Inventario de Productos' : 'Catálogo de Productos'}
+          </h1>
+          <p className="text-slate-400">
+            {isAdmin ? 'Control total de stock y disponibilidad' : 'Explora nuestra amplia gama de tecnología premium'}
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={onAddProduct}
-            className="flex items-center gap-2 px-6 py-3 bg-primary text-background-dark rounded-2xl text-sm font-bold glow-shadow hover:scale-105 transition-all"
-          >
-            + Agregar Producto
-          </button>
-        </div>
+        {isAdmin && (
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={onAddProduct}
+              className="flex items-center gap-2 px-6 py-3 bg-primary text-background-dark rounded-2xl text-sm font-bold glow-shadow hover:scale-105 transition-all"
+            >
+              + Agregar Producto
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <InventoryStatCard icon={<Package className="text-blue-400" />} label="Total SKUs" value="1,240" />
-        <InventoryStatCard icon={<AlertTriangle className="text-amber-400" />} label="Stock Bajo" value="18" />
-        <InventoryStatCard icon={<TrendingUp className="text-emerald-400" />} label="Valor Inventario" value="$245,800" />
-        <InventoryStatCard icon={<DollarSign className="text-primary" />} label="Ventas Hoy" value="$12,450" />
-      </div>
+      {isAdmin && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <InventoryStatCard icon={<Package className="text-blue-400" />} label="Total SKUs" value="1,240" />
+          <InventoryStatCard icon={<AlertTriangle className="text-amber-400" />} label="Stock Bajo" value="18" />
+          <InventoryStatCard icon={<TrendingUp className="text-emerald-400" />} label="Valor Inventario" value="$245,800" />
+          <InventoryStatCard icon={<DollarSign className="text-primary" />} label="Ventas Hoy" value="$12,450" />
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-surface-dark/50 border border-primary/10 p-4 rounded-3xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 backdrop-blur-sm">
@@ -73,7 +107,7 @@ const InventoryScreen: React.FC<InventoryScreenProps> = ({ onSelectProduct, onAd
 
       {/* Product Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {MOCK_PRODUCTS.map((product) => (
+        {products.map((product) => (
           <div 
             key={product.id} 
             className="bg-surface-dark/50 border border-primary/10 rounded-3xl overflow-hidden group hover:border-primary/40 transition-all backdrop-blur-sm flex flex-col"
