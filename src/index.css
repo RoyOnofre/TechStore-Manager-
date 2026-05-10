@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -37,5 +37,25 @@
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Campo de formulario reutilizable para modales */
+.input-field {
+  width: 100%;
+  background: rgba(16, 34, 34, 0.6);
+  border: 1px solid rgba(13, 242, 235, 0.15);
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: #f1f5f9;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.input-field:focus {
+  border-color: rgba(13, 242, 235, 0.5);
+}
+.input-field option {
+  background: #1a2e2e;
+  color: #f1f5f9;
 }
 

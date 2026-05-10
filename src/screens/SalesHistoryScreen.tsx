@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, MoreVertical, Eye, Calendar, ShoppingBag, CreditCard, User, TrendingUp } from 'lucide-react';
-import { MOCK_SALES } from '../constants';
+import { Search, Filter, Download, MoreVertical, Eye, Calendar, ShoppingBag, CreditCard, User, TrendingUp, Loader2 } from 'lucide-react';
 import { UserRole } from '../types';
+import { api } from '../api';
 
 interface SalesHistoryScreenProps {
   userRole: UserRole;
@@ -9,156 +9,144 @@ interface SalesHistoryScreenProps {
 
 const SalesHistoryScreen: React.FC<SalesHistoryScreenProps> = ({ userRole }) => {
   const [sales, setSales] = useState<any[]>([]);
-  const [customerName, setCustomerName] = useState('Alejandro Moreno');
+  const [loading, setLoading] = useState(true);
+  const [totals, setTotals] = useState({ count: 0, revenue: 0 });
 
   useEffect(() => {
-    // Load customer name
-    const savedProfile = localStorage.getItem(`profile_${userRole}`);
-    if (savedProfile) {
-      const parsed = JSON.parse(savedProfile);
-      setCustomerName(parsed.name || 'Alejandro Moreno');
-    }
+    const fetchSales = async () => {
+      try {
+        setLoading(true);
+        const data = await api.getVentas();
+        
+        if (!Array.isArray(data)) {
+          setSales([]);
+          return;
+        }
 
-    // Load sales from localStorage
-    const savedSales = JSON.parse(localStorage.getItem('sales_history') || '[]');
-    
-    // Convert saved sales to match table format if needed
-    const formattedSavedSales = savedSales.map((s: any) => ({
-      ...s,
-      items: s.items.length, // Just count for the table
-      status: 'Completada',
-      paymentMethod: 'Efectivo' // Default for now
-    }));
+        // Mapeo ultra-seguro (Blindado)
+        const formatted = data.map((v: any) => ({
+          id: v?.id || 'N/A',
+          date: v?.fecha || 'Fecha desconocida',
+          customer: v?.vendedor || 'Vendedor/Cliente',
+          items: v?.items || 0,
+          total: Number(v?.total) || 0,
+          paymentMethod: 'Efectivo',
+          status: v?.estado || 'Completada'
+        }));
 
-    setSales([...formattedSavedSales, ...MOCK_SALES]);
+        setSales(formatted);
+
+        const revenue = formatted.reduce((sum: number, s: any) => sum + s.total, 0);
+        setTotals({ count: formatted.length, revenue });
+
+      } catch (error) {
+        console.error("Error crítico en historial:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSales();
   }, [userRole]);
 
-  // Filter sales if user is a client (simulation)
-  const filteredSales = userRole === 'cliente' 
-    ? sales.filter(s => s.customer === customerName)
-    : sales;
+  if (loading) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center h-[60vh] gap-4">
+        <Loader2 className="animate-spin text-primary" size={48} />
+        <div className="text-primary font-black text-xl animate-pulse">SINCRONIZANDO CON SUPABASE...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">{userRole === 'cliente' ? 'Mis Compras' : 'Historial de Ventas'}</h1>
-          <p className="text-slate-400">
-            {userRole === 'cliente' ? 'Consulta el detalle de tus adquisiciones tecnológicas' : 'Auditoría detallada de todas las transacciones'}
-          </p>
+          <h1 className="text-3xl font-black text-white">{userRole === 'cliente' ? 'MIS COMPRAS' : 'HISTORIAL DE VENTAS'}</h1>
+          <p className="text-slate-400 font-medium">Auditoría en tiempo real de transacciones tecnológicas.</p>
         </div>
         {userRole !== 'cliente' && (
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-surface-dark border border-primary/10 rounded-xl text-sm font-medium text-slate-300 hover:bg-primary/10 hover:text-primary transition-all">
-              <Download size={18} />
-              Exportar Reporte
+            <button className="flex items-center gap-2 px-6 py-3 bg-surface-dark border border-primary/10 rounded-2xl text-sm font-bold text-slate-300 hover:text-primary transition-all">
+              <Download size={18} /> Exportar
             </button>
-            <button className="flex items-center gap-2 px-6 py-2 bg-primary text-background-dark rounded-xl text-sm font-bold glow-shadow hover:scale-105 transition-all">
-              <Calendar size={18} />
-              Filtrar Fecha
+            <button className="flex items-center gap-2 px-8 py-3 bg-primary text-background-dark rounded-2xl text-sm font-black glow-shadow hover:scale-105 transition-all">
+              <Calendar size={18} /> Filtrar
             </button>
           </div>
         )}
       </div>
 
-      {/* Summary Stats - Only for staff */}
+      {/* Stats - Protegidos contra NaN */}
       {userRole !== 'cliente' && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <SaleStatCard label="Ventas Totales" value="1,245" trend="+12%" icon={<ShoppingBag size={20} />} />
-          <SaleStatCard label="Ingresos" value="$245,800" trend="+15%" icon={<CreditCard size={20} />} />
-          <SaleStatCard label="Ticket Promedio" value="$197.42" trend="+3%" icon={<TrendingUp size={20} />} />
-          <SaleStatCard label="Clientes Nuevos" value="42" trend="+8%" icon={<User size={20} />} />
+          <SaleStatCard label="Ventas" value={totals.count} trend="+12%" icon={<ShoppingBag size={20} />} />
+          <SaleStatCard label="Ingresos" value={`$${totals.revenue.toLocaleString()}`} trend="+15%" icon={<CreditCard size={20} />} />
+          <SaleStatCard label="Promedio" value={`$${(totals.revenue / (totals.count || 1)).toFixed(2)}`} trend="+3%" icon={<TrendingUp size={20} />} />
+          <SaleStatCard label="Estado" value="ONLINE" trend="100%" icon={<User size={20} />} />
         </div>
       )}
 
       {/* Table Section */}
-      <div className="bg-surface-dark/50 border border-primary/10 rounded-[32px] overflow-hidden backdrop-blur-sm">
-        <div className="p-6 border-b border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-              <input 
-                type="text" 
-                placeholder="Buscar por ID, producto..." 
-                className="bg-background-dark/50 border border-primary/10 rounded-xl py-2 pl-10 pr-4 w-64 focus:outline-none focus:border-primary/50 text-sm"
-              />
-            </div>
-            <button className="p-2 bg-background-dark/50 border border-primary/10 rounded-xl text-slate-400 hover:text-primary transition-colors">
-              <Filter size={20} />
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-400">Estado:</span>
-            <select className="bg-background-dark/50 border border-primary/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none">
-              <option>Todos</option>
-              <option>Completada</option>
-              <option>Cancelada</option>
-              <option>Reembolsada</option>
-            </select>
+      <div className="bg-surface-dark/50 border border-primary/10 rounded-[40px] overflow-hidden backdrop-blur-sm shadow-2xl">
+        <div className="p-8 border-b border-primary/10">
+          <div className="relative max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+            <input 
+              type="text" 
+              placeholder="Buscar por ID o vendedor..." 
+              className="w-full bg-background-dark/50 border border-primary/10 rounded-2xl py-4 pl-12 pr-6 text-white focus:outline-none focus:border-primary/50 text-sm font-bold"
+            />
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left">
             <thead>
-              <tr className="bg-background-dark/30">
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">ID Venta</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha</th>
-                {userRole !== 'cliente' && <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente</th>}
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Items</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Total</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Pago</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
+              <tr className="bg-background-dark/30 border-b border-primary/5">
+                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">ID Transacción</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Fecha y Hora</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Usuario</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Total</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Estado</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-primary/5">
-              {filteredSales.map((sale) => (
-                <tr key={sale.id} className="hover:bg-primary/5 transition-colors group">
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-mono text-primary font-bold">{sale.id}</span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-400">
-                    {sale.date}
-                  </td>
-                  {userRole !== 'cliente' && (
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-white">{sale.customer}</p>
-                    </td>
-                  )}
-                  <td className="px-6 py-4 text-sm text-slate-300">
-                    {sale.items}
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-black text-white">${sale.total.toLocaleString()}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-xs text-slate-400 flex items-center gap-2">
-                      <CreditCard size={14} className="text-primary" />
-                      {sale.paymentMethod}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      sale.status === 'Completada' ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/20' :
-                      sale.status === 'Cancelada' ? 'bg-rose-400/10 text-rose-400 border border-rose-400/20' :
-                      'bg-amber-400/10 text-amber-400 border border-amber-400/20'
-                    }`}>
-                      {sale.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button className="p-2 text-slate-500 hover:text-primary transition-colors">
-                        <Eye size={18} />
-                      </button>
-                      <button className="p-2 text-slate-500 hover:text-primary transition-colors">
-                        <MoreVertical size={18} />
-                      </button>
-                    </div>
-                  </td>
+              {sales.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-8 py-20 text-center text-slate-500 font-bold italic">No se han encontrado registros en la base de datos.</td>
                 </tr>
-              ))}
+              ) : (
+                sales.map((sale) => (
+                  <tr key={sale.id} className="hover:bg-primary/5 transition-all group">
+                    <td className="px-8 py-6">
+                      <span className="text-xs font-mono text-primary font-black bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/10">
+                        {String(sale.id).substring(0, 8)}
+                      </span>
+                    </td>
+                    <td className="px-8 py-6 text-sm text-slate-400 font-bold">{sale.date}</td>
+                    <td className="px-8 py-6">
+                      <p className="text-sm font-black text-white">{sale.customer}</p>
+                    </td>
+                    <td className="px-8 py-6">
+                      <p className="text-lg font-black text-white">${sale.total.toLocaleString()}</p>
+                    </td>
+                    <td className="px-8 py-6">
+                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                        sale.status === 'COMPLETADA' || sale.status === 'Completada' ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' :
+                        'bg-amber-400/10 text-amber-400 border-amber-400/20'
+                      }`}>
+                        {sale.status}
+                      </span>
+                    </td>
+                    <td className="px-8 py-6">
+                      <button className="p-3 bg-background-dark/50 rounded-xl text-slate-500 hover:text-primary hover:scale-110 transition-all">
+                        <Eye size={20} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -168,15 +156,15 @@ const SalesHistoryScreen: React.FC<SalesHistoryScreenProps> = ({ userRole }) => 
 };
 
 const SaleStatCard = ({ label, value, trend, icon }: any) => (
-  <div className="bg-surface-dark/50 border border-primary/10 p-6 rounded-[32px] backdrop-blur-sm">
+  <div className="bg-surface-dark/50 border border-primary/10 p-6 rounded-[32px] backdrop-blur-sm hover:border-primary/30 transition-all group">
     <div className="flex items-center justify-between mb-4">
-      <div className="p-3 bg-background-dark rounded-2xl text-primary">
+      <div className="p-3 bg-background-dark rounded-2xl text-primary group-hover:scale-110 transition-transform">
         {icon}
       </div>
-      <span className="text-xs font-bold text-emerald-400">{trend}</span>
+      <span className="text-xs font-black text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-lg">{trend}</span>
     </div>
-    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">{label}</p>
-    <h3 className="text-2xl font-black text-white mt-1">{value}</h3>
+    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">{label}</p>
+    <h3 className="text-3xl font-black text-white mt-2">{value}</h3>
   </div>
 );
 

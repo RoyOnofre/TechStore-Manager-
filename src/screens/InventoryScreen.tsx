@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, AlertTriangle, TrendingUp, DollarSign, Search, Filter, MoreHorizontal, Eye } from 'lucide-react';
 import { MOCK_PRODUCTS } from '../constants';
-
+import { api } from '../api';
 import { UserRole, Product } from '../types';
 
 interface InventoryScreenProps {
@@ -12,27 +12,48 @@ interface InventoryScreenProps {
 
 const InventoryScreen: React.FC<InventoryScreenProps> = ({ onSelectProduct, onAddProduct, userRole }) => {
   const isAdmin = userRole === 'admin';
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const addedProductsRaw = localStorage.getItem('added_products');
-    if (addedProductsRaw) {
-      const addedProducts = JSON.parse(addedProductsRaw);
-      // Map the simplified product from AddProductScreen to the Product type
-      const mappedProducts: Product[] = addedProducts.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        sku: p.sku,
-        category: p.category,
-        price: parseFloat(p.price) || 0,
-        stock: parseInt(p.stock) || 0,
-        image: p.image || 'https://picsum.photos/seed/tech/400/400',
-        status: parseInt(p.stock) > 10 ? 'In Stock' : (parseInt(p.stock) > 0 ? 'Low Stock' : 'Out of Stock'),
-        description: p.description
-      }));
-      setProducts([...MOCK_PRODUCTS, ...mappedProducts]);
-    }
+    const fetchProducts = async () => {
+      try {
+        const data = await api.getProductos();
+        if (data.length === 0) {
+          // Si la base de datos está vacía, mostramos los mocks temporalmente
+          setProducts(MOCK_PRODUCTS);
+        } else {
+          // Mapeamos los productos de Python a la interfaz de TypeScript
+          setProducts(data.map((p: any) => ({
+            id: p.id,
+            name: p.nombre || p.name || 'Sin nombre',
+            sku: p.sku || 'N/A',
+            category: p.categoria || p.category || 'General',
+            price: p.precio || p.price || 0,
+            stock: p.stock || 0,
+            image: p.imagen || p.image || 'https://via.placeholder.com/300',
+            status: (p.stock || 0) > 10 ? 'In Stock' : ((p.stock || 0) > 0 ? 'Low Stock' : 'Out of Stock'),
+            description: p.estado || ''
+          })));
+        }
+      } catch (error) {
+        console.error("Error cargando productos de la BD:", error);
+        setProducts(MOCK_PRODUCTS); // Fallback en caso de error
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProducts();
+
+    // Sincronización automática de inventario
+    window.addEventListener('inventoryUpdated', fetchProducts);
+    return () => window.removeEventListener('inventoryUpdated', fetchProducts);
   }, []);
+
+  if (loading) {
+    return <div className="p-8 flex items-center justify-center h-full"><div className="text-primary font-bold">Cargando inventario de la base de datos...</div></div>;
+  }
 
   return (
     <div className="p-8 space-y-8">

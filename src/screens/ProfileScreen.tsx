@@ -6,13 +6,20 @@ import { UserRole, User } from '../types';
 
 interface ProfileScreenProps {
   userRole: UserRole;
+  currentUser: any;
 }
 
-const ProfileScreen: React.FC<ProfileScreenProps> = ({ userRole }) => {
-  // Find the user based on role or default to first one
-  const initialUser = MOCK_USERS.find(u => u.role === userRole) || MOCK_USERS[0];
-  
-  const [user, setUser] = useState<User>(initialUser);
+const ProfileScreen: React.FC<ProfileScreenProps> = ({ userRole, currentUser }) => {
+  // Use currentUser as the base truth
+  const [user, setUser] = useState<User>({
+    id: currentUser?.id || '0',
+    name: currentUser?.name || 'Usuario',
+    email: currentUser?.email || '',
+    role: userRole,
+    status: 'Activo',
+    lastLogin: 'Ahora',
+    initials: currentUser?.initials || 'U'
+  });
   const [activeTab, setActiveTab] = useState<'info' | 'security' | 'preferences'>('info');
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -26,16 +33,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ userRole }) => {
 
   // Load from localStorage on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem(`profile_${userRole}`);
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      setUser(parsed);
-      if (parsed.bio) setBio(parsed.bio);
-      if (parsed.language) setLanguage(parsed.language);
-      if (parsed.timezone) setTimezone(parsed.timezone);
-      if (parsed.twoFactor !== undefined) setTwoFactor(parsed.twoFactor);
+    if (currentUser && currentUser.name !== 'Cargando...') {
+       setUser(prev => ({
+         ...prev,
+         name: currentUser.name,
+         email: currentUser.email,
+         initials: currentUser.initials,
+         avatar: currentUser.avatar
+       }));
     }
-  }, [userRole]);
+  }, [currentUser]);
 
   const handleInputChange = (field: keyof User, value: string) => {
     setUser(prev => ({ ...prev, [field]: value }));

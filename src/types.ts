@@ -44,6 +44,7 @@ export type Screen =
   | 'reports'
   | 'profile'
   | 'sales-history'
+  | 'users'
   | 'settings'
   | 'user-management';
 
