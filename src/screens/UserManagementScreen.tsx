@@ -57,9 +57,15 @@ const UserManagementScreen: React.FC = () => {
     setError('');
     try {
       const data = await api.getUsuarios({ buscar, rol: filtroRol, estado: filtroEstado });
-      setUsuarios(Array.isArray(data) ? data : []);
+      // Blindaje Master: Si no es array, forzar array vacío
+      if (!data || !Array.isArray(data)) {
+        console.error("API no devolvió un array:", data);
+        setUsuarios([]);
+      } else {
+        setUsuarios(data);
+      }
     } catch (e: any) {
-      setError(e.message || 'Error al conectar con la base de datos');
+      setError(e.message || 'Error al cargar usuarios');
     } finally {
       setLoading(false);
     }
@@ -76,7 +82,87 @@ const UserManagementScreen: React.FC = () => {
   const inactivos= usuarios.filter(u => u.estado === 'Inactivo').length;
   const admins   = usuarios.filter(u => u.rol === 'admin').length;
 
+  // ── Abrir modales ────────────────────────────────────
+  const abrirCrear = () => {
+    setForm({ nombre: '', correo: '', rol: 'cajero', estado: 'Activo', contrasena: '', confirmar: '' });
+    setModalError(''); setModalSuccess('');
+    setModalMode('crear');
+  };
+
+  const abrirEditar = (u: UsuarioAPI) => {
+    setUsuarioSeleccionado(u);
+    setForm({ nombre: u.nombre, correo: u.correo, rol: u.rol, estado: u.estado, contrasena: '', confirmar: '' });
+    setModalError(''); setModalSuccess('');
+    setModalMode('editar');
+  };
+
+  const abrirEliminar = (u: UsuarioAPI) => {
+    setUsuarioSeleccionado(u);
+    setModalError(''); setModalSuccess('');
+    setModalMode('eliminar');
+  };
+
+  const abrirReset = (u: UsuarioAPI) => {
+    setUsuarioSeleccionado(u);
+    setResetCorreo(u.correo);
+    setResetNueva('');
+    setModalError(''); setModalSuccess('');
+    setModalMode('reset');
+  };
+
   const cerrarModal = () => { setModalMode(null); setUsuarioSeleccionado(null); };
+
+  // ── Acciones ─────────────────────────────────────────
+  const handleCrear = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (form.contrasena !== form.confirmar) { setModalError('Las contraseñas no coinciden'); return; }
+    if (form.contrasena.length < 6) { setModalError('Mínimo 6 caracteres'); return; }
+    setModalLoading(true); setModalError('');
+    try {
+      await api.registrar(form.nombre, form.correo, form.contrasena, form.rol);
+      setModalSuccess('¡Usuario creado exitosamente!');
+      setTimeout(() => { cerrarModal(); cargarUsuarios(); }, 1200);
+    } catch (e: any) { setModalError(e.message); }
+    finally { setModalLoading(false); }
+  };
+
+  const handleEditar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuarioSeleccionado) return;
+    if (form.contrasena && form.contrasena !== form.confirmar) { setModalError('Las contraseñas no coinciden'); return; }
+    setModalLoading(true); setModalError('');
+    try {
+      const payload: any = { nombre: form.nombre, correo: form.correo, rol: form.rol, estado: form.estado };
+      if (form.contrasena) payload.nueva_contrasena = form.contrasena;
+      await api.actualizarUsuario(usuarioSeleccionado.id, payload);
+      setModalSuccess('¡Usuario actualizado!');
+      setTimeout(() => { cerrarModal(); cargarUsuarios(); }, 1200);
+    } catch (e: any) { setModalError(e.message); }
+    finally { setModalLoading(false); }
+  };
+
+  const handleEliminar = async () => {
+    if (!usuarioSeleccionado) return;
+    setModalLoading(true); setModalError('');
+    try {
+      await api.eliminarUsuario(usuarioSeleccionado.id);
+      setModalSuccess('Usuario eliminado');
+      setTimeout(() => { cerrarModal(); cargarUsuarios(); }, 1000);
+    } catch (e: any) { setModalError(e.message); }
+    finally { setModalLoading(false); }
+  };
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetNueva.length < 6) { setModalError('Mínimo 6 caracteres'); return; }
+    setModalLoading(true); setModalError('');
+    try {
+      await api.resetContrasena(resetCorreo, resetNueva);
+      setModalSuccess('¡Contraseña restablecida!');
+      setTimeout(() => cerrarModal(), 1200);
+    } catch (e: any) { setModalError(e.message); }
+    finally { setModalLoading(false); }
+  };
 
   const handleToggleEstado = async (u: UsuarioAPI) => {
     try {
@@ -87,24 +173,25 @@ const UserManagementScreen: React.FC = () => {
 
   // ── Render ────────────────────────────────────────────
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-500">
+    <div className="p-8 space-y-8" translate="no">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">GESTIÓN DE <span className="text-primary">USUARIOS</span></h1>
-          <p className="text-slate-400 font-medium">Administra accesos y roles vinculados a Supabase.</p>
+          <h1 className="text-3xl font-bold text-white">Gestión de Usuarios</h1>
+          <p className="text-slate-400">Administra accesos y roles — conectado a la base de datos</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={() => api.descargarReporteUsuarios()}
-            className="flex items-center gap-2 px-4 py-3 bg-surface-dark border border-primary/10 rounded-2xl text-sm font-bold text-slate-300 hover:text-primary transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-surface-dark border border-primary/10 rounded-xl text-sm font-medium text-slate-300 hover:bg-primary/10 hover:text-primary transition-all"
           >
-            <Download size={18} /> Exportar
+            <Download size={18} />
+            Exportar PDF
           </button>
           <button
-            onClick={() => setModalMode('crear')}
-            className="flex items-center gap-2 px-6 py-3 bg-primary text-background-dark rounded-2xl text-sm font-black glow-shadow hover:scale-105 transition-all"
+            onClick={abrirCrear}
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-background-dark rounded-xl text-sm font-bold glow-shadow hover:scale-105 transition-all"
           >
             <Plus size={18} /> Nuevo Usuario
           </button>
@@ -112,128 +199,319 @@ const UserManagementScreen: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard icon={<Users className="text-blue-400" size={24}/>} label="Total" value={total} color="blue" />
-        <StatCard icon={<UserCheck className="text-emerald-400" size={24}/>} label="Activos" value={activos} color="emerald" />
-        <StatCard icon={<UserMinus className="text-rose-400" size={24}/>} label="Inactivos" value={inactivos} color="rose" />
-        <StatCard icon={<ShieldCheck className="text-violet-400" size={24}/>} label="Admins" value={admins} color="violet" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard icon={<Users className="text-blue-400" size={22}/>} label="Total" value={total} color="blue" />
+        <StatCard icon={<UserCheck className="text-emerald-400" size={22}/>} label="Activos" value={activos} color="emerald" />
+        <StatCard icon={<UserMinus className="text-rose-400" size={22}/>} label="Inactivos" value={inactivos} color="rose" />
+        <StatCard icon={<ShieldCheck className="text-violet-400" size={22}/>} label="Admins" value={admins} color="violet" />
       </div>
 
       {/* Filtros */}
-      <div className="bg-surface-dark/50 border border-primary/10 rounded-[32px] p-6 flex flex-col lg:flex-row gap-4 backdrop-blur-sm shadow-xl">
+      <div className="bg-surface-dark/50 border border-primary/10 rounded-2xl p-4 flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={17} />
           <input
             type="text"
             placeholder="Buscar por nombre o correo..."
             value={buscar}
             onChange={e => setBuscar(e.target.value)}
-            className="w-full bg-background-dark/50 border border-primary/10 rounded-2xl py-4 pl-12 pr-6 text-sm font-bold focus:outline-none focus:border-primary/50 text-white transition-all"
+            className="w-full bg-background-dark/60 border border-primary/10 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-primary/50 text-white"
           />
         </div>
-        <div className="flex gap-4">
-          <select
-            value={filtroRol}
-            onChange={e => setFiltroRol(e.target.value)}
-            className="bg-background-dark/50 border border-primary/10 rounded-2xl px-6 py-4 text-sm font-bold text-slate-300 outline-none focus:border-primary/50"
-          >
-            <option value="todos">Todos los roles</option>
-            <option value="admin">Administradores</option>
-            <option value="cajero">Cajeros</option>
-            <option value="cliente">Clientes</option>
-          </select>
-          <button onClick={cargarUsuarios} className="p-4 bg-background-dark/50 border border-primary/10 rounded-2xl text-slate-400 hover:text-primary transition-all">
-            <RefreshCw size={20} />
-          </button>
-        </div>
+        <select
+          value={filtroRol}
+          onChange={e => setFiltroRol(e.target.value)}
+          className="bg-background-dark/60 border border-primary/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-primary/50"
+        >
+          <option value="todos">Todos los roles</option>
+          <option value="admin">Admin</option>
+          <option value="cajero">Cajero</option>
+          <option value="cliente">Cliente</option>
+        </select>
+        <select
+          value={filtroEstado}
+          onChange={e => setFiltroEstado(e.target.value)}
+          className="bg-background-dark/60 border border-primary/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-primary/50"
+        >
+          <option value="todos">Todos los estados</option>
+          <option value="Activo">Activo</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+        <button onClick={cargarUsuarios} className="p-2.5 bg-background-dark/60 border border-primary/10 rounded-xl text-slate-400 hover:text-primary transition-colors">
+          <RefreshCw size={18} />
+        </button>
       </div>
 
-      {/* Tabla Blindada */}
-      <div className="bg-surface-dark/50 border border-primary/10 rounded-[40px] overflow-hidden shadow-2xl backdrop-blur-sm">
+      {/* Error global */}
+      {error && (
+        <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 flex items-center gap-2">
+          <AlertTriangle size={18}/> {error}
+        </div>
+      )}
+
+      {/* Tabla */}
+      <div className="bg-surface-dark/50 border border-primary/10 rounded-3xl overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-32 gap-4 text-slate-400">
-            <Loader2 className="animate-spin text-primary" size={48}/>
-            <p className="font-black text-xl animate-pulse text-primary uppercase tracking-widest">Sincronizando Usuarios...</p>
+          <div className="flex items-center justify-center py-20 gap-3 text-slate-400">
+            <Loader2 className="animate-spin text-primary" size={28}/> Cargando usuarios...
+          </div>
+        ) : usuarios.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500">
+            <Users size={40} className="opacity-30"/>
+            <p>No se encontraron usuarios con esos filtros</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-background-dark/30 border-b border-primary/10">
-                  <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Usuario</th>
-                  <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Privilegios</th>
-                  <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Estado</th>
-                  <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actividad</th>
-                  <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Acciones</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Usuario</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Rol</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Último Login</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary/5">
-                {usuarios.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-8 py-20 text-center text-slate-500 font-bold italic">No se encontraron registros vinculados.</td>
+                {usuarios.map(u => (
+                  <tr
+                    key={u.id || Math.random().toString()}
+                    className="hover:bg-primary/5 transition-colors group"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+                          {u.iniciales || u.nombre?.substring(0, 2).toUpperCase() || '??'}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-white">{u.nombre}</p>
+                          <p className="text-xs text-slate-400">{u.correo}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${ROL_COLORES[u.rol] ?? 'bg-slate-500/10 text-slate-400 border-slate-500/20'}`}>
+                        {u.rol}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${u.estado === 'Activo' ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-rose-400/10 text-rose-400 border-rose-400/20'}`}>
+                        {u.estado}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5 text-slate-400 text-sm">
+                        <Clock size={13}/> {u.ultimo_login || 'Nunca'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ActionBtn icon={<Edit2 size={14}/>} label="Editar" color="blue" onClick={() => abrirEditar(u)} />
+                        <ActionBtn
+                          icon={u.estado === 'Activo' ? <ToggleRight size={14}/> : <ToggleLeft size={14}/>}
+                          label={u.estado === 'Activo' ? 'Desactivar' : 'Activar'}
+                          color={u.estado === 'Activo' ? 'amber' : 'emerald'}
+                          onClick={() => handleToggleEstado(u)}
+                        />
+                        <ActionBtn icon={<Filter size={14}/>} label="Reset Pass" color="violet" onClick={() => abrirReset(u)} />
+                        <ActionBtn icon={<Trash2 size={14}/>} label="Eliminar" color="rose" onClick={() => abrirEliminar(u)} />
+                      </div>
+                    </td>
                   </tr>
-                ) : (
-                  usuarios.map(u => (
-                    <tr key={u.id} className="hover:bg-primary/5 transition-all group border-b border-primary/5">
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-lg">
-                            {u?.iniciales || '??'}
-                          </div>
-                          <div>
-                            <p className="text-sm font-black text-white uppercase tracking-tight">{u?.nombre || 'N/A'}</p>
-                            <p className="text-xs text-slate-500 font-medium">{u?.correo}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${ROL_COLORES[u.rol] || 'border-slate-500/20 text-slate-400'}`}>
-                          {u.rol}
-                        </span>
-                      </td>
-                      <td className="px-8 py-6">
-                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${u.estado === 'Activo' ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-rose-400/10 text-rose-400 border-rose-400/20'}`}>
-                          {u.estado}
-                        </span>
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-tighter">
-                          <Clock size={14} className="text-primary"/> {u?.ultimo_login || 'Nunca'}
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => handleToggleEstado(u)} className="p-3 bg-background-dark/50 rounded-xl text-slate-500 hover:text-primary transition-all">
-                            {u.estado === 'Activo' ? <ToggleRight size={20}/> : <ToggleLeft size={20}/>}
-                          </button>
-                          <button className="p-3 bg-background-dark/50 rounded-xl text-slate-500 hover:text-rose-500 transition-all">
-                            <Trash2 size={20}/>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>
         )}
+        <div className="p-4 border-t border-primary/10 text-sm text-slate-500">
+          Mostrando {usuarios.length} usuario{usuarios.length !== 1 ? 's' : ''}
+        </div>
       </div>
+
+      {/* ── MODALES ── */}
+      {modalMode && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={e => { if (e.target === e.currentTarget) cerrarModal(); }}
+        >
+          <div
+            className="bg-surface-dark border border-primary/20 rounded-3xl w-full max-w-lg shadow-2xl"
+          >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-primary/10">
+                <h2 className="text-xl font-bold text-white">
+                  {modalMode === 'crear'   && '➕ Nuevo Usuario'}
+                  {modalMode === 'editar'  && '✏️ Editar Usuario'}
+                  {modalMode === 'eliminar'&& '🗑️ Eliminar Usuario'}
+                  {modalMode === 'reset'   && '🔑 Restablecer Contraseña'}
+                </h2>
+                <button onClick={cerrarModal} className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-primary/10 transition-all"><X size={20}/></button>
+              </div>
+
+              <div className="p-6 space-y-4">
+
+                {/* Mensajes */}
+                {modalError && (
+                  <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm flex items-center gap-2">
+                    <AlertTriangle size={16}/> {modalError}
+                  </div>
+                )}
+                {modalSuccess && (
+                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm flex items-center gap-2">
+                    <CheckCircle2 size={16}/> {modalSuccess}
+                  </div>
+                )}
+
+                {/* CREAR / EDITAR */}
+                {(modalMode === 'crear' || modalMode === 'editar') && (
+                  <form onSubmit={modalMode === 'crear' ? handleCrear : handleEditar} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field label="Nombre completo">
+                        <input
+                          value={form.nombre} onChange={e => setForm(p=>({...p, nombre: e.target.value}))}
+                          placeholder="Ej: Juan Pérez" required
+                          className="input-field"
+                        />
+                      </Field>
+                      <Field label="Correo electrónico">
+                        <input
+                          type="email" value={form.correo} onChange={e => setForm(p=>({...p, correo: e.target.value}))}
+                          placeholder="correo@ejemplo.com" required
+                          className="input-field"
+                        />
+                      </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field label="Rol">
+                        <select value={form.rol} onChange={e => setForm(p=>({...p, rol: e.target.value}))} className="input-field">
+                          <option value="admin">Administrador</option>
+                          <option value="cajero">Cajero</option>
+                          <option value="cliente">Cliente</option>
+                        </select>
+                      </Field>
+                      <Field label="Estado">
+                        <select value={form.estado} onChange={e => setForm(p=>({...p, estado: e.target.value}))} className="input-field">
+                          <option value="Activo">Activo</option>
+                          <option value="Inactivo">Inactivo</option>
+                        </select>
+                      </Field>
+                    </div>
+                    <div className="border-t border-primary/10 pt-4">
+                      <p className="text-xs text-slate-500 mb-3">{modalMode === 'editar' ? 'Dejar en blanco para no cambiar contraseña' : 'Contraseña de acceso (mín. 6 caracteres)'}</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Field label="Contraseña">
+                          <div className="relative">
+                            <input
+                              type={mostrarPass ? 'text' : 'password'}
+                              value={form.contrasena} onChange={e => setForm(p=>({...p, contrasena: e.target.value}))}
+                              placeholder="••••••••" required={modalMode === 'crear'}
+                              className="input-field pr-10"
+                            />
+                            <button type="button" onClick={() => setMostrarPass(!mostrarPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary">
+                              {mostrarPass ? <EyeOff size={16}/> : <Eye size={16}/>}
+                            </button>
+                          </div>
+                        </Field>
+                        <Field label="Confirmar">
+                          <input
+                            type={mostrarPass ? 'text' : 'password'}
+                            value={form.confirmar} onChange={e => setForm(p=>({...p, confirmar: e.target.value}))}
+                            placeholder="••••••••" required={modalMode === 'crear'}
+                            className="input-field"
+                          />
+                        </Field>
+                      </div>
+                    </div>
+                    <button type="submit" disabled={modalLoading} className="w-full bg-primary text-background-dark font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-all disabled:opacity-50 mt-2">
+                      {modalLoading ? <><Loader2 size={18} className="animate-spin"/> Guardando...</> : modalMode === 'crear' ? 'Crear Usuario' : 'Guardar Cambios'}
+                    </button>
+                  </form>
+                )}
+
+                {/* ELIMINAR */}
+                {modalMode === 'eliminar' && usuarioSeleccionado && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl">
+                      <p className="text-slate-300 text-sm">¿Seguro que deseas eliminar a <strong className="text-white">{usuarioSeleccionado.nombre}</strong>?</p>
+                      <p className="text-slate-400 text-xs mt-2">⚠️ Si tiene ventas registradas, no podrá eliminarse. Usa "Desactivar" en su lugar.</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={cerrarModal} className="flex-1 py-3 rounded-xl border border-primary/20 text-slate-300 hover:bg-primary/5 transition-all text-sm font-medium">Cancelar</button>
+                      <button onClick={handleEliminar} disabled={modalLoading} className="flex-1 py-3 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600 transition-all text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+                        {modalLoading ? <Loader2 size={16} className="animate-spin"/> : <Trash2 size={16}/>} Eliminar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* RESET CONTRASEÑA */}
+                {modalMode === 'reset' && (
+                  <form onSubmit={handleReset} className="space-y-4">
+                    <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl text-sm text-slate-300">
+                      Restableciendo contraseña para: <strong className="text-white">{resetCorreo}</strong>
+                    </div>
+                    <Field label="Nueva contraseña (mín. 6 caracteres)">
+                      <div className="relative">
+                        <input
+                          type={mostrarPass ? 'text' : 'password'}
+                          value={resetNueva} onChange={e => setResetNueva(e.target.value)}
+                          placeholder="Nueva contraseña" required className="input-field pr-10"
+                        />
+                        <button type="button" onClick={() => setMostrarPass(!mostrarPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary">
+                          {mostrarPass ? <EyeOff size={16}/> : <Eye size={16}/>}
+                        </button>
+                      </div>
+                    </Field>
+                    <button type="submit" disabled={modalLoading} className="w-full bg-violet-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-all disabled:opacity-50">
+                      {modalLoading ? <><Loader2 size={18} className="animate-spin"/> Guardando...</> : '🔑 Restablecer Contraseña'}
+                    </button>
+                  </form>
+                )}
+
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 };
 
-const StatCard = ({ icon, label, value, color }: any) => (
-  <div className="bg-surface-dark/50 border border-primary/10 p-6 rounded-[32px] backdrop-blur-sm group hover:border-primary/30 transition-all shadow-xl">
-    <div className="flex items-center gap-4">
-      <div className="p-4 bg-background-dark rounded-[24px] group-hover:scale-110 transition-transform">
-        {icon}
-      </div>
+// ─── Sub-componentes ──────────────────────────────────
+const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: number; color: string }> = ({ icon, label, value, color }) => (
+  <div className="bg-surface-dark/50 border border-primary/10 p-5 rounded-2xl hover:border-primary/30 transition-all">
+    <div className="flex items-center gap-3">
+      <div className="p-2 bg-background-dark rounded-xl">{icon}</div>
       <div>
-        <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{label}</p>
-        <p className="text-3xl font-black text-white tracking-tighter">{value}</p>
+        <p className="text-slate-400 text-xs font-medium">{label}</p>
+        <p className="text-2xl font-bold text-white">{value}</p>
       </div>
     </div>
+  </div>
+);
+
+const ActionBtn: React.FC<{ icon: React.ReactNode; label: string; color: string; onClick: () => void }> = ({ icon, label, color, onClick }) => {
+  const colors: Record<string, string> = {
+    blue:   'hover:bg-blue-500/10   hover:text-blue-400   hover:border-blue-400/30',
+    amber:  'hover:bg-amber-500/10  hover:text-amber-400  hover:border-amber-400/30',
+    emerald:'hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-400/30',
+    rose:   'hover:bg-rose-500/10   hover:text-rose-400   hover:border-rose-400/30',
+    violet: 'hover:bg-violet-500/10 hover:text-violet-400 hover:border-violet-400/30',
+  };
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      className={`p-1.5 border border-transparent rounded-lg text-slate-500 transition-all ${colors[color] ?? ''}`}
+    >
+      {icon}
+    </button>
+  );
+};
+
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="space-y-1.5">
+    <label className="text-xs font-medium text-slate-400">{label}</label>
+    {children}
   </div>
 );
 

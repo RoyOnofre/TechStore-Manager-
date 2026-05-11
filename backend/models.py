@@ -42,9 +42,8 @@ class Usuario(Base):
     avatar = Column(String, nullable=True)
     ultimo_login = Column(DateTime, nullable=True)  # Último inicio de sesión
 
-    ventas = relationship("Venta", back_populates="vendedor")
+    ventas = relationship("Venta", back_populates="cajero")
     movimientos = relationship("MovimientoInventario", back_populates="usuario")
-    auditorias = relationship("Auditoria", back_populates="usuario_obj")
 
 # --- TABLA DE PRODUCTOS ---
 
@@ -101,7 +100,7 @@ class Venta(Base):
     
     # Conexiones
     usuario_id = Column(String, ForeignKey("usuarios.id")) # Quién lo vendió
-    vendedor = relationship("Usuario", back_populates="ventas")
+    cajero = relationship("Usuario", back_populates="ventas")
     
     cliente_id = Column(String, ForeignKey("clientes.id"), nullable=True) # A quién se le vendió
     cliente_obj = relationship("Cliente", back_populates="ventas")
@@ -135,13 +134,4 @@ class Auditoria(Base):
     fecha = Column(DateTime, default=datetime.datetime.utcnow)
     
     # Relación para saber qué usuario hizo la acción
-    usuario_obj = relationship("Usuario", back_populates="auditorias")
-# --- TABLA DE CONFIGURACIÓN ---
-
-class Configuracion(Base):
-    __tablename__ = "configuracion"
-    
-    clave = Column(String, primary_key=True, index=True) # ej: 'tienda_nombre', 'impuesto_iva'
-    valor = Column(String) # Guardaremos el valor como string (o JSON string)
-    categoria = Column(String, index=True) # ej: 'tienda', 'finanzas', 'seguridad'
-    ultima_actualizacion = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    usuario = relationship("Usuario")

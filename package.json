@@ -5,9 +5,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:frontend": "vite --port=3000 --host=0.0.0.0",
-    "dev:backend": "python backend/main.py",
+    "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
     "predeploy": "npm run build",

@@ -26,14 +26,14 @@ const InventoryScreen: React.FC<InventoryScreenProps> = ({ onSelectProduct, onAd
           // Mapeamos los productos de Python a la interfaz de TypeScript
           setProducts(data.map((p: any) => ({
             id: p.id,
-            name: p.nombre || p.name || 'Sin nombre',
-            sku: p.sku || 'N/A',
-            category: p.categoria || p.category || 'General',
-            price: p.precio || p.price || 0,
-            stock: p.stock || 0,
-            image: p.imagen || p.image || 'https://via.placeholder.com/300',
-            status: (p.stock || 0) > 10 ? 'In Stock' : ((p.stock || 0) > 0 ? 'Low Stock' : 'Out of Stock'),
-            description: p.estado || ''
+            name: p.nombre,
+            sku: p.sku,
+            category: p.categoria,
+            price: p.precio,
+            stock: p.stock,
+            image: p.imagen,
+            status: p.stock > 10 ? 'In Stock' : (p.stock > 0 ? 'Low Stock' : 'Out of Stock'),
+            description: p.estado
           })));
         }
       } catch (error) {
@@ -43,12 +43,7 @@ const InventoryScreen: React.FC<InventoryScreenProps> = ({ onSelectProduct, onAd
         setLoading(false);
       }
     };
-    
     fetchProducts();
-
-    // Sincronización automática de inventario
-    window.addEventListener('inventoryUpdated', fetchProducts);
-    return () => window.removeEventListener('inventoryUpdated', fetchProducts);
   }, []);
 
   if (loading) {

@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { api } from './api';
-import {
-  LayoutDashboard,
-  Package,
-  Users,
-  ShoppingCart,
-  BarChart3,
-  Settings,
-  LogOut,
-  Bell,
+import React, { useState } from 'react';
+import { 
+  LayoutDashboard, 
+  Package, 
+  Users, 
+  ShoppingCart, 
+  BarChart3, 
+  Settings, 
+  LogOut, 
+  Bell, 
   Search,
   Menu,
+  X,
+  Plus,
   User as UserIcon,
   History,
   CheckCircle2,
@@ -18,8 +19,11 @@ import {
   Info,
   XCircle
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Screen, UserRole, Notification } from './types';
+import { MOCK_NOTIFICATIONS } from './constants';
 
-// Pantallas del Sistema
+// Screens
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import DashboardScreen from './screens/DashboardScreen';
@@ -34,65 +38,30 @@ import SettingsScreen from './screens/SettingsScreen';
 import UserManagementScreen from './screens/UserManagementScreen';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Tipos y Constantes
-import { Screen, UserRole, Notification } from './types';
-import { MOCK_NOTIFICATIONS } from './constants';
-
-interface SidebarItemProps {
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-  onClick: () => void;
-  roleColor?: string;
-  badge?: string;
-}
-
-const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, onClick, roleColor = 'primary', badge }) => {
-  const activeBg = roleColor === 'primary' ? 'bg-primary' : roleColor === 'emerald-500' ? 'bg-emerald-500' : 'bg-violet-500';
-  const hoverBg = roleColor === 'primary' ? 'hover:bg-primary/10' : roleColor === 'emerald-500' ? 'hover:bg-emerald-500/10' : 'hover:bg-violet-500/10';
-  const hoverText = roleColor === 'primary' ? 'hover:text-primary' : roleColor === 'emerald-500' ? 'hover:text-emerald-500' : 'hover:text-violet-500';
-
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 relative ${active
-        ? `${activeBg} text-background-dark font-semibold glow-shadow`
-        : `text-slate-400 ${hoverBg} ${hoverText}`
-        }`}
-    >
-      {icon}
-      <span className="text-sm flex-1 text-left">{label}</span>
-      {badge && (
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${active ? 'bg-background-dark text-white' : `${activeBg} text-background-dark`}`}>
-          {badge}
-        </span>
-      )}
-    </button>
-  );
-};
-
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>(() => {
-    const savedScreen = localStorage.getItem('techstore_current_screen');
-    const savedRole = localStorage.getItem('techstore_user_role');
-    return savedRole ? (savedScreen as Screen || 'dashboard') : 'login';
+    const saved = localStorage.getItem('currentScreen');
+    if (localStorage.getItem('isLoggedIn') === 'true') {
+      return (saved as Screen) || 'dashboard';
+    }
+    return 'login';
   });
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<UserRole>(() => {
-    return (localStorage.getItem('techstore_user_role') as UserRole) || 'admin';
+    return (localStorage.getItem('userRole') as UserRole) || 'admin';
   });
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [currentUser, setCurrentUser] = useState({
-    name: 'Cargando...',
-    initials: '??',
-    email: '',
-    avatar: null as string | null
+    name: localStorage.getItem('userName') || 'Cargando...',
+    initials: localStorage.getItem('userInitials') || '??',
+    email: localStorage.getItem('userEmail') || '',
+    avatar: localStorage.getItem('userAvatar') || null as string | null
   });
 
-  useEffect(() => {
+  // Load user profile and listen for updates
+  React.useEffect(() => {
     const loadProfile = () => {
       const savedUser = localStorage.getItem(`profile_${userRole}`);
       if (savedUser) {
@@ -111,37 +80,41 @@ const App: React.FC = () => {
     return () => window.removeEventListener('profileUpdated', loadProfile);
   }, [userRole]);
 
-  const navigateTo = (screen: Screen, productId?: string) => {
-    if (productId) setSelectedProductId(productId);
-    setCurrentScreen(screen);
-    localStorage.setItem('techstore_current_screen', screen);
-    setShowNotifications(false);
-  };
+  // Sincronizar estado con localStorage y URL
+  React.useEffect(() => {
+    localStorage.setItem('currentScreen', currentScreen);
+    localStorage.setItem('userRole', userRole);
+    // Actualizar el hash de la URL para que funcione el botón "Atrás"
+    if (!['login', 'register'].includes(currentScreen)) {
+      window.location.hash = currentScreen;
+    } else {
+      window.location.hash = '';
+    }
+  }, [currentScreen, userRole]);
 
-  const [storeName, setStoreName] = useState('TechStore');
-
-  useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        const data = await api.getConfiguracion();
-        if (data && typeof data === 'object' && data.tienda_nombre) {
-          setStoreName(String(data.tienda_nombre));
-        }
-      } catch (err) {
-        console.error("Error cargando nombre de tienda:", err);
-        setStoreName('TechStore');
+  // Escuchar cambios en el hash (Botón Atrás del navegador)
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '') as Screen;
+      if (hash && hash !== currentScreen && localStorage.getItem('isLoggedIn') === 'true') {
+        setCurrentScreen(hash);
       }
     };
 
-    if (userRole) fetchConfig();
-    window.addEventListener('configUpdated', fetchConfig);
-    return () => window.removeEventListener('configUpdated', fetchConfig);
-  }, [userRole]);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [currentScreen]);
+
+  const navigateTo = (screen: Screen, productId?: string) => {
+    if (productId) setSelectedProductId(productId);
+    setCurrentScreen(screen);
+    setShowNotifications(false);
+  };
 
   const handleLogin = (role: UserRole, userData?: any) => {
     setUserRole(role);
-    localStorage.setItem('techstore_user_role', role);
-    localStorage.setItem('techstore_current_screen', 'dashboard');
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('userRole', role);
     if (userData) {
       setCurrentUser({
         name: userData.nombre,
@@ -149,20 +122,27 @@ const App: React.FC = () => {
         email: userData.correo,
         avatar: userData.avatar || null
       });
+      // Guardar datos para persistencia física
+      localStorage.setItem('userName', userData.nombre);
+      localStorage.setItem('userEmail', userData.correo);
+      localStorage.setItem('userInitials', userData.iniciales);
+      if (userData.avatar) localStorage.setItem('userAvatar', userData.avatar);
     }
     navigateTo('dashboard');
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('techstore_user_role');
-    localStorage.removeItem('techstore_current_screen');
-    localStorage.removeItem(`profile_${userRole}`);
+    localStorage.clear();
     setUserRole('admin');
+    setCurrentUser({ name: 'Usuario', initials: 'U', email: '', avatar: null });
     navigateTo('login');
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
-  const markAllAsRead = () => setNotifications(notifications.map(n => ({ ...n, read: true })));
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  };
 
   const getRoleColor = () => {
     switch (userRole) {
@@ -178,6 +158,7 @@ const App: React.FC = () => {
   const roleBgColor = userRole === 'admin' ? 'bg-primary' : userRole === 'cajero' ? 'bg-emerald-500' : 'bg-violet-500';
   const roleTextColor = userRole === 'admin' ? 'text-primary' : userRole === 'cajero' ? 'text-emerald-500' : 'text-violet-500';
   const roleHoverBg = userRole === 'admin' ? 'hover:bg-primary/10' : userRole === 'cajero' ? 'hover:bg-emerald-500/10' : 'hover:bg-violet-500/10';
+  const roleHoverText = userRole === 'admin' ? 'hover:text-primary' : userRole === 'cajero' ? 'hover:text-emerald-500' : 'hover:text-violet-500';
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -219,7 +200,7 @@ const App: React.FC = () => {
             <SettingsScreen />
           </ProtectedRoute>
         );
-      case 'users':
+      case 'user-management':
         return (
           <ProtectedRoute allowedRoles={['admin']} userRole={userRole} onAccessDenied={() => navigateTo('dashboard')}>
             <UserManagementScreen />
@@ -233,132 +214,140 @@ const App: React.FC = () => {
   const showSidebar = !['login', 'register'].includes(currentScreen);
 
   const getBgColor = () => {
-    if (userRole === 'cajero') return 'bg-[#0a1a1a]';
-    if (userRole === 'cliente') return 'bg-[#1a1022]';
+    if (userRole === 'cajero') return 'bg-[#0a1a1a]'; // Darker teal for cashier
+    if (userRole === 'cliente') return 'bg-[#1a1022]'; // Darker violet for client
     return 'bg-background-dark';
   };
 
   return (
-    <div className={`min-h-screen flex ${getBgColor()} tech-pattern transition-colors duration-500 overflow-hidden`}>
-      {showSidebar && isSidebarOpen && (
-        <aside className="w-72 bg-surface-dark border-r border-white/5 flex flex-col z-50 animate-in slide-in-from-left duration-300">
-          <div className="p-6 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-lg animate-pulse">
-              <Package className="text-background-dark" size={24} />
+    <div translate="no" className={`min-h-screen flex ${getBgColor()} tech-pattern transition-colors duration-500 overflow-hidden`}>
+      {/* Sidebar */}
+      <AnimatePresence>
+        {showSidebar && isSidebarOpen && (
+          <motion.aside
+            initial={{ x: -280 }}
+            animate={{ x: 0 }}
+            exit={{ x: -280 }}
+            className={`w-72 bg-surface-dark border-r ${roleBorderColor} flex flex-col z-50`}
+          >
+            <div className="p-6 flex items-center gap-3">
+              <div className={`w-10 h-10 ${roleBgColor} rounded-lg flex items-center justify-center glow-shadow`}>
+                <Package className="text-background-dark" size={24} />
+              </div>
+              <h1 className="text-xl font-bold tracking-tight text-white">TechStore<span className={roleTextColor}>Pro</span></h1>
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-white">{storeName}<span className={roleTextColor}>Pro</span></h1>
-          </div>
 
-          <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto scrollbar-hide">
-            <SidebarItem
-              icon={<LayoutDashboard size={20} />}
-              label="Dashboard"
-              active={currentScreen === 'dashboard'}
-              onClick={() => navigateTo('dashboard')}
-              roleColor={roleColor}
-            />
+            <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto scrollbar-hide">
+              <SidebarItem 
+                icon={<LayoutDashboard size={20} />} 
+                label="Dashboard" 
+                active={currentScreen === 'dashboard'} 
+                onClick={() => navigateTo('dashboard')}
+                roleColor={roleColor}
+              />
 
-            {userRole === 'admin' && (
-              <>
-                <SidebarItem
-                  icon={<Users size={20} />}
-                  label="Usuarios"
-                  active={currentScreen === 'users'}
-                  onClick={() => navigateTo('users')}
-                  roleColor={roleColor}
-                  badge="3"
-                />
-                <SidebarItem
-                  icon={<Package size={20} />}
-                  label="Inventario"
-                  active={currentScreen === 'inventory' || currentScreen === 'product-detail' || currentScreen === 'add-product'}
-                  onClick={() => navigateTo('inventory')}
-                  roleColor={roleColor}
-                />
-              </>
-            )}
+              {userRole === 'admin' && (
+                <>
+                  <SidebarItem 
+                    icon={<Users size={20} />} 
+                    label="Usuarios" 
+                    active={currentScreen === 'user-management'} 
+                    onClick={() => navigateTo('user-management')}
+                    roleColor={roleColor}
+                    badge="3"
+                  />
+                  <SidebarItem 
+                    icon={<Package size={20} />} 
+                    label="Inventario" 
+                    active={currentScreen === 'inventory' || currentScreen === 'product-detail' || currentScreen === 'add-product'} 
+                    onClick={() => navigateTo('inventory')}
+                    roleColor={roleColor}
+                  />
+                </>
+              )}
 
-            {userRole === 'cliente' && (
-              <>
-                <SidebarItem
-                  icon={<Package size={20} />}
-                  label="Catálogo"
-                  active={currentScreen === 'inventory'}
-                  onClick={() => navigateTo('inventory')}
-                  roleColor={roleColor}
-                />
-                <SidebarItem
-                  icon={<ShoppingCart size={20} />}
-                  label="Tienda / Comprar"
-                  active={currentScreen === 'pos'}
+              {userRole === 'cliente' && (
+                <>
+                  <SidebarItem 
+                    icon={<Package size={20} />} 
+                    label="Catálogo" 
+                    active={currentScreen === 'inventory'} 
+                    onClick={() => navigateTo('inventory')}
+                    roleColor={roleColor}
+                  />
+                  <SidebarItem 
+                    icon={<ShoppingCart size={20} />} 
+                    label="Tienda / Comprar" 
+                    active={currentScreen === 'pos'} 
+                    onClick={() => navigateTo('pos')}
+                    roleColor={roleColor}
+                  />
+                </>
+              )}
+              
+              {(userRole === 'admin' || userRole === 'cajero') && (
+                <SidebarItem 
+                  icon={<ShoppingCart size={20} />} 
+                  label="Punto de Venta" 
+                  active={currentScreen === 'pos'} 
                   onClick={() => navigateTo('pos')}
                   roleColor={roleColor}
                 />
-              </>
-            )}
+              )}
 
-            {(userRole === 'admin' || userRole === 'cajero') && (
-              <SidebarItem
-                icon={<ShoppingCart size={20} />}
-                label="Punto de Venta"
-                active={currentScreen === 'pos'}
-                onClick={() => navigateTo('pos')}
+              <SidebarItem 
+                icon={<History size={20} />} 
+                label={userRole === 'cliente' ? 'Mis Facturas' : 'Historial de Ventas'} 
+                active={currentScreen === 'sales-history'} 
+                onClick={() => navigateTo('sales-history')}
                 roleColor={roleColor}
               />
-            )}
 
-            <SidebarItem
-              icon={<History size={20} />}
-              label={userRole === 'cliente' ? 'Mis Facturas' : 'Historial de Ventas'}
-              active={currentScreen === 'sales-history'}
-              onClick={() => navigateTo('sales-history')}
-              roleColor={roleColor}
-            />
+              {userRole === 'admin' && (
+                <SidebarItem 
+                  icon={<BarChart3 size={20} />} 
+                  label="Reportes" 
+                  active={currentScreen === 'reports'} 
+                  onClick={() => navigateTo('reports')}
+                  roleColor={roleColor}
+                />
+              )}
+            </nav>
 
-            {userRole === 'admin' && (
-              <SidebarItem
-                icon={<BarChart3 size={20} />}
-                label="Reportes"
-                active={currentScreen === 'reports'}
-                onClick={() => navigateTo('reports')}
+            <div className={`p-4 border-t ${roleBorderColor} space-y-2`}>
+              <SidebarItem 
+                icon={<UserIcon size={20} />} 
+                label="Mi Perfil" 
+                active={currentScreen === 'profile'}
+                onClick={() => navigateTo('profile')}
                 roleColor={roleColor}
               />
-            )}
-          </nav>
-
-          <div className={`p-4 border-t ${roleBorderColor} space-y-2`}>
-            <SidebarItem
-              icon={<UserIcon size={20} />}
-              label="Mi Perfil"
-              active={currentScreen === 'profile'}
-              onClick={() => navigateTo('profile')}
-              roleColor={roleColor}
-            />
-            {userRole === 'admin' && (
-              <SidebarItem
-                icon={<Settings size={20} />}
-                label="Configuración"
-                active={currentScreen === 'settings'}
-                onClick={() => navigateTo('settings')}
+              {userRole === 'admin' && (
+                <SidebarItem 
+                  icon={<Settings size={20} />} 
+                  label="Configuración" 
+                  active={currentScreen === 'settings'}
+                  onClick={() => navigateTo('settings')}
+                  roleColor={roleColor}
+                />
+              )}
+              <SidebarItem 
+                icon={<LogOut size={20} />} 
+                label="Cerrar Sesión" 
+                onClick={handleLogout}
                 roleColor={roleColor}
               />
-            )}
-            <SidebarItem
-              icon={<LogOut size={20} />}
-              label="Cerrar Sesión"
-              onClick={handleLogout}
-              roleColor={roleColor}
-            />
-          </div>
-        </aside>
-      )}
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col relative overflow-hidden">
         {showSidebar && (
           <header className={`h-20 border-b ${roleBorderColor} bg-surface-dark/50 backdrop-blur-md flex items-center justify-between px-8 z-40`}>
             <div className="flex items-center gap-4">
-              <button
+              <button 
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className={`p-2 ${roleHoverBg} rounded-lg transition-colors ${roleTextColor}`}
               >
@@ -366,9 +355,9 @@ const App: React.FC = () => {
               </button>
               <div className="relative hidden md:block">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input
-                  type="text"
-                  placeholder="Buscar productos, órdenes..."
+                <input 
+                  type="text" 
+                  placeholder="Buscar productos, órdenes..." 
                   className={`bg-background-dark/50 border ${roleBorderColor} rounded-full py-2 pl-10 pr-4 w-80 focus:outline-none focus:border-${roleColor}/50 transition-all text-sm`}
                 />
               </div>
@@ -376,7 +365,7 @@ const App: React.FC = () => {
 
             <div className="flex items-center gap-6">
               <div className="relative">
-                <button
+                <button 
                   onClick={() => setShowNotifications(!showNotifications)}
                   className={`relative p-2 ${roleHoverBg} rounded-full transition-colors text-slate-300`}
                 >
@@ -387,55 +376,63 @@ const App: React.FC = () => {
                 </button>
 
                 {/* Notifications Dropdown */}
-                {showNotifications && (
-                  <div className="absolute right-0 mt-4 w-96 bg-surface-dark border border-primary/20 rounded-[32px] shadow-2xl overflow-hidden z-50 backdrop-blur-xl">
-                    <div className="p-6 border-b border-primary/10 flex items-center justify-between bg-primary/5">
-                      <h3 className="font-bold text-white">Notificaciones</h3>
-                      <button
-                        onClick={markAllAsRead}
-                        className="text-xs text-primary font-bold hover:underline"
-                      >
-                        Marcar todas como leídas
-                      </button>
-                    </div>
-                    <div className="max-h-[400px] overflow-y-auto scrollbar-hide">
-                      {notifications.length === 0 ? (
-                        <div className="p-10 text-center text-slate-500">
-                          <Bell size={32} className="mx-auto mb-2 opacity-20" />
-                          <p className="text-sm">No tienes notificaciones</p>
-                        </div>
-                      ) : (
-                        notifications.map((n) => (
-                          <div key={n.id} className={`p-5 border-b border-primary/5 hover:bg-primary/5 transition-colors flex gap-4 ${!n.read ? 'bg-primary/[0.02]' : ''}`}>
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${n.type === 'warning' ? 'bg-amber-400/10 text-amber-400' :
-                              n.type === 'success' ? 'bg-emerald-400/10 text-emerald-400' :
-                                n.type === 'error' ? 'bg-rose-500/10 text-rose-500' :
-                                  'bg-blue-400/10 text-blue-400'
-                              }`}>
-                              {n.type === 'warning' ? <AlertTriangle size={20} /> :
-                                n.type === 'success' ? <CheckCircle2 size={20} /> :
-                                  n.type === 'error' ? <XCircle size={20} /> :
-                                    <Info size={20} />}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-1">
-                                <p className="text-sm font-bold text-white">{n.title}</p>
-                                <span className="text-[10px] text-slate-500">{n.time}</span>
-                              </div>
-                              <p className="text-xs text-slate-400 leading-relaxed">{n.message}</p>
-                            </div>
-                            {!n.read && (
-                              <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                            )}
+                <AnimatePresence>
+                  {showNotifications && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-4 w-96 bg-surface-dark border border-primary/20 rounded-[32px] shadow-2xl overflow-hidden z-50 backdrop-blur-xl"
+                    >
+                      <div className="p-6 border-b border-primary/10 flex items-center justify-between bg-primary/5">
+                        <h3 className="font-bold text-white">Notificaciones</h3>
+                        <button 
+                          onClick={markAllAsRead}
+                          className="text-xs text-primary font-bold hover:underline"
+                        >
+                          Marcar todas como leídas
+                        </button>
+                      </div>
+                      <div className="max-h-[400px] overflow-y-auto scrollbar-hide">
+                        {notifications.length === 0 ? (
+                          <div className="p-10 text-center text-slate-500">
+                            <Bell size={32} className="mx-auto mb-2 opacity-20" />
+                            <p className="text-sm">No tienes notificaciones</p>
                           </div>
-                        ))
-                      )}
-                    </div>
-                    <button className="w-full py-4 text-xs font-bold text-slate-500 hover:text-primary transition-colors border-t border-primary/10">
-                      Ver todas las notificaciones
-                    </button>
-                  </div>
-                )}
+                        ) : (
+                          notifications.map((n) => (
+                            <div key={n.id} className={`p-5 border-b border-primary/5 hover:bg-primary/5 transition-colors flex gap-4 ${!n.read ? 'bg-primary/[0.02]' : ''}`}>
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                                n.type === 'warning' ? 'bg-amber-400/10 text-amber-400' :
+                                n.type === 'success' ? 'bg-emerald-400/10 text-emerald-400' :
+                                n.type === 'error' ? 'bg-rose-500/10 text-rose-500' :
+                                'bg-blue-400/10 text-blue-400'
+                              }`}>
+                                {n.type === 'warning' ? <AlertTriangle size={20} /> :
+                                 n.type === 'success' ? <CheckCircle2 size={20} /> :
+                                 n.type === 'error' ? <XCircle size={20} /> :
+                                 <Info size={20} />}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between mb-1">
+                                  <p className="text-sm font-bold text-white">{n.title}</p>
+                                  <span className="text-[10px] text-slate-500">{n.time}</span>
+                                </div>
+                                <p className="text-xs text-slate-400 leading-relaxed">{n.message}</p>
+                              </div>
+                              {!n.read && (
+                                <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <button className="w-full py-4 text-xs font-bold text-slate-500 hover:text-primary transition-colors border-t border-primary/10">
+                        Ver todas las notificaciones
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div className={`flex items-center gap-3 pl-6 border-l ${roleBorderColor}`}>
@@ -443,7 +440,7 @@ const App: React.FC = () => {
                   <p className="text-sm font-semibold text-white">{currentUser.name}</p>
                   <p className={`text-xs ${roleTextColor} uppercase font-bold tracking-widest`}>{userRole}</p>
                 </div>
-                <button
+                <button 
                   onClick={() => navigateTo('profile')}
                   className={`w-10 h-10 rounded-full ${userRole === 'admin' ? 'bg-primary/20 border-primary/30 text-primary' : userRole === 'cajero' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-500' : 'bg-violet-500/20 border-violet-500/30 text-violet-500'} border flex items-center justify-center font-bold hover:scale-110 transition-all overflow-hidden`}
                 >
@@ -459,12 +456,56 @@ const App: React.FC = () => {
         )}
 
         <div className="flex-1 overflow-y-auto scrollbar-hide">
-          {renderScreen() || <DashboardScreen userRole={userRole} onNavigate={navigateTo} />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentScreen}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="h-full"
+            >
+              {renderScreen()}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>
   );
 };
 
+interface SidebarItemProps {
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+  roleColor?: string;
+  badge?: string;
+}
+
+const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, onClick, roleColor = 'primary', badge }) => {
+  const activeBg = roleColor === 'primary' ? 'bg-primary' : roleColor === 'emerald-500' ? 'bg-emerald-500' : 'bg-violet-500';
+  const hoverBg = roleColor === 'primary' ? 'hover:bg-primary/10' : roleColor === 'emerald-500' ? 'hover:bg-emerald-500/10' : 'hover:bg-violet-500/10';
+  const hoverText = roleColor === 'primary' ? 'hover:text-primary' : roleColor === 'emerald-500' ? 'hover:text-emerald-500' : 'hover:text-violet-500';
+
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 relative ${
+        active 
+          ? `${activeBg} text-background-dark font-semibold glow-shadow` 
+          : `text-slate-400 ${hoverBg} ${hoverText}`
+      }`}
+    >
+      {icon}
+      <span className="text-sm flex-1 text-left">{label}</span>
+      {badge && (
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${active ? 'bg-background-dark text-white' : `${activeBg} text-background-dark`}`}>
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+};
 
 export default App;

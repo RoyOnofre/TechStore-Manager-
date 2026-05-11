@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, Edit3, Trash2, History, Plus, Minus, Save, Package, Info, BarChart } from 'lucide-react';
+import { MOCK_PRODUCTS, MOCK_MOVEMENTS } from '../constants';
 import { motion } from 'motion/react';
 import { UserRole } from '../types';
-import { api } from '../api';
 
 interface ProductDetailScreenProps {
   productId: string;
@@ -11,42 +11,10 @@ interface ProductDetailScreenProps {
 }
 
 const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ productId, userRole, onBack }) => {
-  const [product, setProduct] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const product = MOCK_PRODUCTS.find(p => p.id === productId) || MOCK_PRODUCTS[0];
   const [stockAdjustment, setStockAdjustment] = useState(0);
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        setLoading(true);
-        const products = await api.getProductos();
-        const found = products.find((p: any) => p.id === productId);
-        setProduct(found);
-      } catch (error) {
-        console.error("Error cargando detalle:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProduct();
-  }, [productId]);
-
-  const handleUpdateStock = async () => {
-    if (stockAdjustment === 0) return;
-    try {
-      await api.reordenarStock(productId, stockAdjustment);
-      setProduct({ ...product, stock: (product.stock || 0) + stockAdjustment });
-      setStockAdjustment(0);
-      alert("¡Inventario actualizado con éxito!");
-    } catch (error) {
-      alert("Error al actualizar inventario");
-    }
-  };
-
   const isClient = userRole === 'cliente';
-
-  if (loading) return <div className="p-8 flex items-center justify-center h-full"><div className="text-primary font-bold">Cargando detalles master...</div></div>;
-  if (!product) return <div className="p-8 text-center text-white">Producto no encontrado</div>;
 
   return (
     <div className="p-8 space-y-8">
@@ -77,8 +45,8 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ productId, us
             <div className="flex flex-col md:flex-row gap-10">
               <div className="w-full md:w-1/2 aspect-square rounded-3xl overflow-hidden border border-primary/10">
                 <img 
-                  src={product.imagen || product.image || 'https://via.placeholder.com/600'} 
-                  alt={product.nombre || product.name} 
+                  src={product.image} 
+                  alt={product.name} 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -87,29 +55,75 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ productId, us
                 <div>
                   <div className="flex items-center gap-3 mb-4">
                     <span className="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                      {product.categoria || product.category}
+                      {product.category}
                     </span>
                     <span className="text-xs text-slate-500 font-mono">{product.sku}</span>
                   </div>
-                  <h1 className="text-4xl font-black text-white leading-tight">{product.nombre || product.name}</h1>
+                  <h1 className="text-4xl font-black text-white leading-tight">{product.name}</h1>
                   <p className="text-slate-400 mt-4 text-lg leading-relaxed">
-                    {product.descripcion || 'Potente dispositivo de última generación diseñado para profesionales que buscan el máximo rendimiento y portabilidad.'}
+                    Potente dispositivo de última generación diseñado para profesionales que buscan el máximo rendimiento y portabilidad.
                   </p>
                 </div>
 
                 <div className="mt-10 grid grid-cols-2 gap-6">
                   <div className="p-6 bg-background-dark/50 border border-primary/10 rounded-3xl">
                     <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Precio Unitario</p>
-                    <p className="text-3xl font-black text-white">${(product.precio || product.price || 0).toLocaleString()}</p>
+                    <p className="text-3xl font-black text-white">${product.price.toLocaleString()}</p>
                   </div>
                   <div className="p-6 bg-background-dark/50 border border-primary/10 rounded-3xl">
                     <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Disponibilidad</p>
-                    <p className={`text-3xl font-black ${(product.stock || 0) <= 10 ? 'text-amber-400' : 'text-primary'}`}>{product.stock > 0 ? 'En Stock' : 'Agotado'}</p>
+                    <p className={`text-3xl font-black ${product.stock <= 10 ? 'text-amber-400' : 'text-primary'}`}>{product.stock > 0 ? 'En Stock' : 'Agotado'}</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {!isClient && (
+            /* Movements History */
+            <div className="bg-surface-dark/50 border border-primary/10 rounded-[40px] p-8 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <History className="text-primary" size={24} />
+                  <h2 className="text-2xl font-bold text-white">Historial de Movimientos</h2>
+                </div>
+                <button className="text-sm text-primary font-bold hover:underline">Ver todo el historial</button>
+              </div>
+
+              <div className="space-y-4">
+                {MOCK_MOVEMENTS.map((move) => (
+                  <div key={move.id} className="flex items-center justify-between p-5 bg-background-dark/30 border border-primary/5 rounded-2xl hover:border-primary/20 transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        move.type === 'ENTRADA' ? 'bg-emerald-400/10 text-emerald-400' :
+                        move.type === 'SALIDA' ? 'bg-rose-400/10 text-rose-400' :
+                        'bg-amber-400/10 text-amber-400'
+                      }`}>
+                        {move.type === 'ENTRADA' ? <Plus size={20} /> : move.type === 'SALIDA' ? <Minus size={20} /> : <Edit3 size={20} />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-white">{move.type}</span>
+                          <span className="text-xs text-slate-500">• {move.date}</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">{move.reason}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-lg font-black ${
+                        move.type === 'ENTRADA' ? 'text-emerald-400' :
+                        move.type === 'SALIDA' ? 'text-rose-400' :
+                        'text-amber-400'
+                      }`}>
+                        {move.type === 'ENTRADA' ? '+' : '-'}{move.quantity}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase">{move.user}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {!isClient && (
@@ -123,7 +137,7 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ productId, us
                   <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-4">Cantidad a ajustar</p>
                   <div className="flex items-center justify-center gap-6">
                     <button 
-                      onClick={() => setStockAdjustment(stockAdjustment - 1)}
+                      onClick={() => setStockAdjustment(Math.max(-product.stock, stockAdjustment - 1))}
                       className="w-12 h-12 rounded-full border border-primary/30 flex items-center justify-center text-primary hover:bg-primary hover:text-background-dark transition-all"
                     >
                       <Minus size={24} />
@@ -138,12 +152,28 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({ productId, us
                   </div>
                 </div>
 
-                <button 
-                  onClick={handleUpdateStock}
-                  className="w-full bg-primary text-background-dark font-black py-5 rounded-2xl flex items-center justify-center gap-3 glow-shadow hover:scale-[1.02] active:scale-[0.98] transition-all"
-                >
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Motivo del ajuste</label>
+                  <select className="w-full bg-background-dark/50 border border-primary/10 rounded-2xl py-4 px-4 text-white focus:outline-none focus:border-primary transition-all">
+                    <option>Entrada por Compra</option>
+                    <option>Salida por Venta</option>
+                    <option>Devolución Cliente</option>
+                    <option>Ajuste por Daño</option>
+                    <option>Inventario Físico</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Notas adicionales</label>
+                  <textarea 
+                    placeholder="Escribe una breve descripción..."
+                    className="w-full bg-background-dark/50 border border-primary/10 rounded-2xl py-4 px-4 text-white focus:outline-none focus:border-primary transition-all h-24 resize-none"
+                  ></textarea>
+                </div>
+
+                <button className="w-full bg-primary text-background-dark font-black py-5 rounded-2xl flex items-center justify-center gap-3 glow-shadow hover:scale-[1.02] active:scale-[0.98] transition-all">
                   <Save size={20} />
-                  Guardar Ajuste
+                  Guardar Cambios
                 </button>
               </div>
 

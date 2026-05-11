@@ -12,13 +12,13 @@ interface ProfileScreenProps {
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ userRole, currentUser }) => {
   // Use currentUser as the base truth
   const [user, setUser] = useState<User>({
-    id: currentUser?.id || '0',
-    name: currentUser?.name || 'Usuario',
-    email: currentUser?.email || '',
+    id: currentUser.id || '0',
+    name: currentUser.name || 'Usuario',
+    email: currentUser.email || '',
     role: userRole,
     status: 'Activo',
     lastLogin: 'Ahora',
-    initials: currentUser?.initials || 'U'
+    initials: currentUser.initials || 'U'
   });
   const [activeTab, setActiveTab] = useState<'info' | 'security' | 'preferences'>('info');
   const [isSaving, setIsSaving] = useState(false);

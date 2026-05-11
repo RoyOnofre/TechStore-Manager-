@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, Mail, Lock, ArrowLeft, CheckCircle2, ShieldCheck, UserCheck } from 'lucide-react';
+import { motion } from 'motion/react';
 import { api } from '../api';
 
 interface RegisterScreenProps {
@@ -28,121 +29,182 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onBack }) => {
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (step < 3) setStep(step + 1);
-    else handleFinalSubmit();
+    if (step < 3) {
+      setStep(step + 1);
+    } else {
+      handleFinalSubmit();
+    }
   };
 
   const handleFinalSubmit = async () => {
-    if (formData.contrasena !== formData.confirmar) { setError('Las contraseñas no coinciden'); return; }
-    if (formData.contrasena.length < 6) { setError('Mínimo 6 caracteres'); return; }
+    if (formData.contrasena !== formData.confirmar) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+    if (formData.contrasena.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
 
     setLoading(true);
     try {
-      await api.registrar(`${formData.nombre} ${formData.apellido}`.trim(), formData.correo, formData.contrasena, formData.rol);
+      await api.registrar(
+        `${formData.nombre} ${formData.apellido}`.trim(),
+        formData.correo,
+        formData.contrasena,
+        formData.rol
+      );
       setSuccess(true);
       setTimeout(() => onBack(), 2500);
-    } catch (err: any) { setError(err.message || 'Error al crear la cuenta'); }
-    finally { setLoading(false); }
+    } catch (err: any) {
+      setError(err.message || 'Error al crear la cuenta');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (success) {
     return (
       <div className="h-full flex items-center justify-center p-6 bg-background-dark tech-pattern">
-        <div className="text-center space-y-6 animate-in fade-in zoom-in duration-700">
-          <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-xl shadow-primary/20 animate-bounce-subtle">
-            <CheckCircle2 className="text-background-dark" size={64} />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center space-y-6"
+        >
+          <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto glow-shadow">
+            <CheckCircle2 className="text-background-dark" size={48} />
           </div>
-          <h2 className="text-5xl font-black text-white tracking-tighter">¡CUENTA LISTA!</h2>
-          <p className="text-slate-400 text-xl font-medium">Usuario sincronizado en Supabase.</p>
-          <div className="w-12 h-1.5 bg-primary mx-auto rounded-full animate-pulse"></div>
-        </div>
+          <h2 className="text-4xl font-black text-white">¡Cuenta Creada!</h2>
+          <p className="text-slate-400 text-lg">Tu usuario fue guardado en la base de datos de Supabase.</p>
+          <p className="text-primary font-bold">Redirigiendo al login...</p>
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="h-full flex items-center justify-center p-6 bg-background-dark tech-pattern">
-      <div className="w-full max-w-2xl glass-panel p-12 rounded-[48px] relative shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-500">
-        <button onClick={onBack} className="absolute left-10 top-10 p-3 hover:bg-primary hover:text-background-dark rounded-2xl transition-all duration-300 text-primary border border-primary/20">
-          <ArrowLeft size={28} />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-2xl glass-panel p-10 rounded-3xl relative glow-shadow"
+      >
+        <button
+          onClick={onBack}
+          className="absolute left-8 top-8 p-2 hover:bg-primary/10 rounded-full transition-colors text-primary"
+        >
+          <ArrowLeft size={24} />
         </button>
 
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Crear <span className="text-primary">Perfil</span></h1>
-          <p className="text-slate-400 mt-2 font-bold uppercase tracking-widest text-[10px]">Paso {step} de 3</p>
-          
-          <div className="flex items-center justify-center gap-4 mt-10">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold text-white">Crear Nueva Cuenta</h1>
+          <p className="text-slate-400 mt-2">Se guardará directamente en la base de datos</p>
+
+          <div className="flex items-center justify-center gap-4 mt-8">
             {[1, 2, 3].map((s) => (
               <div key={s} className="flex items-center">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all duration-500 ${step >= s ? 'bg-primary text-background-dark scale-110 shadow-lg' : 'bg-surface-dark text-slate-600 border border-white/5'}`}>
-                  {step > s ? <CheckCircle2 size={24} /> : s}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
+                  step >= s ? 'bg-primary text-background-dark glow-shadow' : 'bg-surface-dark text-slate-500 border border-primary/10'
+                }`}>
+                  {step > s ? <CheckCircle2 size={20} /> : s}
                 </div>
-                {s < 3 && <div className={`w-16 h-1 rounded-full mx-1 transition-all duration-700 ${step > s ? 'bg-primary' : 'bg-surface-dark'}`}></div>}
+                {s < 3 && <div className={`w-12 h-0.5 ${step > s ? 'bg-primary' : 'bg-surface-dark'}`}></div>}
               </div>
             ))}
           </div>
         </div>
 
-        {error && <div className="mb-8 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-sm text-center font-black animate-in zoom-in">{error}</div>}
-
-        <form className="space-y-8" onSubmit={handleNext}>
-          <div className="animate-in fade-in slide-in-from-right-8 duration-500">
-            {step === 1 && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Nombre</label>
-                    <input name="nombre" type="text" value={formData.nombre} onChange={handleChange} placeholder="Juan" className="w-full bg-background-dark/50 border border-primary/10 rounded-2xl py-5 px-8 text-white focus:border-primary transition-all font-bold" required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Apellido</label>
-                    <input name="apellido" type="text" value={formData.apellido} onChange={handleChange} placeholder="Pérez" className="w-full bg-background-dark/50 border border-primary/10 rounded-2xl py-5 px-8 text-white focus:border-primary transition-all font-bold" required />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Correo Corporativo</label>
-                  <input name="correo" type="email" value={formData.correo} onChange={handleChange} placeholder="juan@techstore.com" className="w-full bg-background-dark/50 border border-primary/10 rounded-2xl py-5 px-8 text-white focus:border-primary transition-all font-bold" required />
-                </div>
-              </div>
-            )}
-            {step === 2 && (
-              <div className="grid grid-cols-2 gap-8">
-                <button type="button" onClick={() => setFormData(p => ({ ...p, rol: 'admin' }))} className={`group flex flex-col items-center gap-4 p-10 rounded-[32px] border-4 transition-all duration-300 ${formData.rol === 'admin' ? 'border-primary bg-primary/10 text-primary scale-105 shadow-xl' : 'border-white/5 bg-background-dark/30 text-slate-500 hover:border-primary/30'}`}>
-                  <ShieldCheck className={`transition-transform duration-500 ${formData.rol === 'admin' ? 'scale-125' : ''}`} size={64} />
-                  <span className="font-black uppercase tracking-tighter text-xl">Administrador</span>
-                </button>
-                <button type="button" onClick={() => setFormData(p => ({ ...p, rol: 'cajero' }))} className={`group flex flex-col items-center gap-4 p-10 rounded-[32px] border-4 transition-all duration-300 ${formData.rol === 'cajero' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500 scale-105 shadow-xl' : 'border-white/5 bg-background-dark/30 text-slate-500 hover:border-emerald-500/30'}`}>
-                  <UserCheck className={`transition-transform duration-500 ${formData.rol === 'cajero' ? 'scale-125' : ''}`} size={64} />
-                  <span className="font-black uppercase tracking-tighter text-xl">Cajero</span>
-                </button>
-              </div>
-            )}
-            {step === 3 && (
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Contraseña de Seguridad</label>
-                  <input name="contrasena" type="password" value={formData.contrasena} onChange={handleChange} placeholder="••••••••" className="w-full bg-background-dark/50 border border-primary/10 rounded-2xl py-5 px-8 text-white focus:border-primary transition-all font-bold" required />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Confirmar Acceso</label>
-                  <input name="confirmar" type="password" value={formData.confirmar} onChange={handleChange} placeholder="••••••••" className="w-full bg-background-dark/50 border border-primary/10 rounded-2xl py-5 px-8 text-white focus:border-primary transition-all font-bold" required />
-                </div>
-              </div>
-            )}
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center">
+            {error}
           </div>
+        )}
 
-          <div className="flex gap-4">
-            {step > 1 && (
-              <button type="button" onClick={() => setStep(step - 1)} className="px-8 py-5 bg-surface-dark text-white font-black rounded-[24px] border border-white/5 hover:bg-white/10 transition-all">
-                Atrás
-              </button>
-            )}
-            <button type="submit" disabled={loading} className="flex-1 bg-primary text-background-dark font-black py-5 rounded-[24px] flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.95] transition-all shadow-2xl shadow-primary/30 disabled:opacity-50 text-xl tracking-tighter">
-              {loading ? 'Sincronizando...' : step === 3 ? 'FINALIZAR REGISTRO' : 'CONTINUAR'}
-            </button>
-          </div>
+        <form className="space-y-6" onSubmit={handleNext}>
+          {step === 1 && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Nombre</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={20} />
+                    <input name="nombre" type="text" value={formData.nombre} onChange={handleChange}
+                      placeholder="Juan" className="w-full bg-background-dark/50 border border-primary/20 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-primary text-white" required />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Apellido</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={20} />
+                    <input name="apellido" type="text" value={formData.apellido} onChange={handleChange}
+                      placeholder="Pérez" className="w-full bg-background-dark/50 border border-primary/20 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-primary text-white" required />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300">Correo Electrónico</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={20} />
+                  <input name="correo" type="email" value={formData.correo} onChange={handleChange}
+                    placeholder="juan.perez@ejemplo.com" className="w-full bg-background-dark/50 border border-primary/20 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-primary text-white" required />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 2 && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-slate-300">Tipo de Rol en el Sistema</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button type="button" onClick={() => setFormData(p => ({ ...p, rol: 'admin' }))}
+                    className={`flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${formData.rol === 'admin' ? 'border-primary bg-primary/10 text-primary' : 'border-primary/10 bg-background-dark/50 text-slate-400 hover:border-primary/30'}`}>
+                    <ShieldCheck size={32} />
+                    <span className="font-bold uppercase text-sm">Administrador</span>
+                    <span className="text-[10px] text-center opacity-70">Acceso total al sistema</span>
+                  </button>
+                  <button type="button" onClick={() => setFormData(p => ({ ...p, rol: 'cajero' }))}
+                    className={`flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${formData.rol === 'cajero' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500' : 'border-primary/10 bg-background-dark/50 text-slate-400 hover:border-emerald-500/30'}`}>
+                    <UserCheck size={32} />
+                    <span className="font-bold uppercase text-sm">Cajero</span>
+                    <span className="text-[10px] text-center opacity-70">Ventas e inventario</span>
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 text-center mt-2">Rol seleccionado: <span className="text-primary font-bold">{formData.rol.charAt(0).toUpperCase() + formData.rol.slice(1)}</span></p>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 3 && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300">Contraseña</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={20} />
+                  <input name="contrasena" type="password" value={formData.contrasena} onChange={handleChange}
+                    placeholder="Mínimo 6 caracteres" className="w-full bg-background-dark/50 border border-primary/20 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-primary text-white" required />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300">Confirmar Contraseña</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={20} />
+                  <input name="confirmar" type="password" value={formData.confirmar} onChange={handleChange}
+                    placeholder="Repite la contraseña" className="w-full bg-background-dark/50 border border-primary/20 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-primary text-white" required />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-primary text-background-dark font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all glow-shadow mt-10 disabled:opacity-50"
+          >
+            {loading ? 'Guardando en Supabase...' : step === 3 ? 'Crear Cuenta' : 'Siguiente Paso'}
+          </button>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };

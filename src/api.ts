@@ -10,23 +10,73 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ correo, contrasena })
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || "Error en el login");
-    }
+    if (!res.ok) throw new Error((await res.json()).detail);
     return res.json();
   },
 
-  registrar: async (nombre: string, correo: string, contrasena: string, rol: string = "cliente") => {
-    const res = await fetch(`${API_URL}/auth/register`, {
+  registrar: async (nombre: string, correo: string, contrasena: string, rol: string) => {
+    const res = await fetch(`${API_URL}/auth/registro`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nombre, correo, contrasena, rol })
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || "Error en el registro");
-    }
+    if (!res.ok) throw new Error((await res.json()).detail);
+    return res.json();
+  },
+
+  resetContrasena: async (correo: string, nueva_contrasena: string) => {
+    const res = await fetch(`${API_URL}/auth/reset-contrasena`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ correo, nueva_contrasena })
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    return res.json();
+  },
+
+  // ─────────────────────────────────────────
+  // GESTIÓN DE USUARIOS (CRUD COMPLETO)
+  // ─────────────────────────────────────────
+  getUsuarios: async (filtros?: { buscar?: string; rol?: string; estado?: string }) => {
+    const params = new URLSearchParams();
+    if (filtros?.buscar) params.append("buscar", filtros.buscar);
+    if (filtros?.rol && filtros.rol !== "todos") params.append("rol", filtros.rol);
+    if (filtros?.estado && filtros.estado !== "todos") params.append("estado", filtros.estado);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const res = await fetch(`${API_URL}/usuarios${query}`);
+    if (!res.ok) throw new Error("Error obteniendo usuarios");
+    return res.json();
+  },
+
+  actualizarUsuario: async (id: string, datos: {
+    nombre?: string;
+    correo?: string;
+    rol?: string;
+    estado?: string;
+    nueva_contrasena?: string;
+  }) => {
+    const res = await fetch(`${API_URL}/usuarios/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(datos)
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    return res.json();
+  },
+
+  cambiarEstadoUsuario: async (id: string) => {
+    const res = await fetch(`${API_URL}/usuarios/${id}/estado`, {
+      method: "PATCH",
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    return res.json();
+  },
+
+  eliminarUsuario: async (id: string) => {
+    const res = await fetch(`${API_URL}/usuarios/${id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
     return res.json();
   },
 
@@ -39,115 +89,34 @@ export const api = {
     return res.json();
   },
 
-  crearProducto: async (data: any) => {
+  crearProducto: async (producto: any) => {
     const res = await fetch(`${API_URL}/productos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify(producto)
     });
-    if (!res.ok) throw new Error("Error al crear producto");
-    const nuevo = await res.json();
-    window.dispatchEvent(new Event('inventoryUpdated'));
-    return nuevo;
-  },
-
-  reordenarStock: async (id: string, cantidad: number) => {
-    const res = await fetch(`${API_URL}/productos/${id}/reordenar`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cantidad })
-    });
-    if (!res.ok) throw new Error("Error al reordenar stock");
-    window.dispatchEvent(new Event('inventoryUpdated'));
+    if (!res.ok) throw new Error("Error creando producto");
     return res.json();
   },
 
   // ─────────────────────────────────────────
   // VENTAS
   // ─────────────────────────────────────────
-  registrarVenta: async (data: any) => {
+  crearVenta: async (venta: any) => {
     const res = await fetch(`${API_URL}/ventas`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify(venta)
     });
-    if (!res.ok) throw new Error("Error al registrar venta");
+    if (!res.ok) throw new Error((await res.json()).detail);
     return res.json();
   },
 
-  getVentas: async () => {
-    const res = await fetch(`${API_URL}/ventas`);
-    if (!res.ok) throw new Error("Error obteniendo historial");
-    return res.json();
+  descargarReporte: () => {
+    window.open(`${API_URL}/reportes/ventas/pdf`, "_blank");
   },
 
-  // ─────────────────────────────────────────
-  // USUARIOS Y GESTIÓN
-  // ─────────────────────────────────────────
-  getUsuarios: async (filtros: { buscar?: string, rol?: string, estado?: string } = {}) => {
-    const params = new URLSearchParams();
-    if (filtros.buscar) params.append('buscar', filtros.buscar);
-    if (filtros.rol && filtros.rol !== 'todos') params.append('rol', filtros.rol);
-    if (filtros.estado && filtros.estado !== 'todos') params.append('estado', filtros.estado);
-    
-    const res = await fetch(`${API_URL}/usuarios?${params.toString()}`);
-    if (!res.ok) throw new Error("Error al obtener usuarios");
-    return res.json();
-  },
-
-  actualizarUsuario: async (id: string, data: any) => {
-    const res = await fetch(`${API_URL}/usuarios/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error("Error al actualizar usuario");
-    return res.json();
-  },
-
-  eliminarUsuario: async (id: string) => {
-    const res = await fetch(`${API_URL}/usuarios/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Error al eliminar usuario");
-    return res.json();
-  },
-
-  resetContrasena: async (correo: string, nueva: string) => {
-    const res = await fetch(`${API_URL}/auth/reset-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ correo, nueva_contrasena: nueva })
-    });
-    if (!res.ok) throw new Error("Error al restablecer contraseña");
-    return res.json();
-  },
-
-  cambiarEstadoUsuario: async (id: string) => {
-    const res = await fetch(`${API_URL}/usuarios/${id}/toggle-estado`, { method: "POST" });
-    if (!res.ok) throw new Error("Error al cambiar estado");
-    return res.json();
-  },
-
-  // ─────────────────────────────────────────
-  // REPORTES
-  // ─────────────────────────────────────────
   descargarReporteUsuarios: () => {
     window.open(`${API_URL}/reportes/usuarios/pdf`, "_blank");
-  },
-
-  // ─── CONFIGURACIÓN MASTER ───────────────────────────
-  getConfiguracion: async () => {
-    const res = await fetch(`${API_URL}/configuracion`);
-    if (!res.ok) throw new Error('Error al obtener configuración');
-    return res.json();
-  },
-
-  updateConfiguracionBulk: async (data: any) => {
-    const res = await fetch(`${API_URL}/configuracion/bulk`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error('Error al guardar configuración');
-    return res.json();
   }
 };
