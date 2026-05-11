@@ -1,4 +1,4 @@
-PROTOTIPO INICIAL DE GESTION DE USURIOS Y LA BASE DE DATOS
+PROYECTO DE INGENIERIA DE SOFWARE-SIS324
 Universitario (a):
 
 1.-Coraite Yanaje Luz Clara
@@ -15,7 +15,7 @@ Carrera: Ing. Sistemas. Materia: SIS324 – INGENIERIA DE SOFWARE
 Grupo: 17
 
 
-Fecha: 20/3/2026
+Fecha: 10/05/2026
 
 # Run and deploy your AI Studio app
 
