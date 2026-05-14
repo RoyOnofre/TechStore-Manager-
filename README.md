@@ -1,103 +1,283 @@
-# PROYECTO DE INGENIERÍA DE SOFTWARE - SIS324
-## Sistema de Gestión: TechStore Manager
+🚀 PROYECTO DE INGENIERÍA DE SOFTWARE – SIS324
+💻 TechStore Manager
+Sistema de Gestión Integral para Tiendas de Tecnología
+📌 Información General
+Campo	Información
+Carrera	Ingeniería de Sistemas
+Materia	SIS324 – Ingeniería de Software
+Grupo	17
+Proyecto	TechStore Manager
+Tipo de Sistema	Aplicación Web Empresarial
+Arquitectura	Cliente - Servidor
+Base de Datos	PostgreSQL (Supabase Cloud)
+👨‍💻 Integrantes del Equipo
+Integrante	Rol
+Coraite Yanaje Luz Clara	Desarrollo Frontend
+Muraña Pizarro Nayda Thatiana	Base de Datos y QA
+Onofre Alanoca Roy	Backend & Arquitectura
+🧠 Descripción del Proyecto
 
-### Información del Grupo
-*   **Carrera:** Ing. Sistemas
-*   **Materia:** SIS324 – INGENIERÍA DE SOFTWARE
-*   **Grupo:** 17
-*   **Proyecto:** TechStore Manager - Sistema de Gestión Integral para Tiendas de Tecnología
+TechStore Manager es una plataforma web empresarial desarrollada para administrar de manera eficiente tiendas especializadas en productos tecnológicos.
 
-### Integrantes
-1.  **Coraite Yanaje Luz Clara**
-2.  **Muraña Pizarro Nayda Thatiana**
-3.  **Onofre Alanoca Roy**
+El sistema centraliza:
 
----
+✅ Gestión de inventarios
+✅ Registro de ventas
+✅ Administración de clientes
+✅ Control de usuarios
+✅ Reportes financieros
+✅ Auditoría y trazabilidad
 
-## 1. Descripción del Proyecto
-**TechStore Manager** es una aplicación web de nivel empresarial diseñada para optimizar las operaciones de tiendas especializadas en tecnología. El sistema integra la gestión de inventarios, ventas, clientes y usuarios bajo una arquitectura moderna y escalable, permitiendo un control preciso de stock, garantías y reportes financieros.
+La solución fue diseñada bajo principios de:
 
-## 2. Tecnologías y Lenguajes
-El proyecto utiliza un stack tecnológico de vanguardia para garantizar rendimiento y seguridad:
+Arquitectura escalable
+Seguridad de datos
+Alto rendimiento
+Experiencia de usuario moderna
+Desarrollo ágil
+🎯 Objetivos del Sistema
+Objetivo General
 
-### **Front-End (Interfaz de Usuario)**
-*   **Lenguajes:** JavaScript / TypeScript.
-*   **Framework:** **React 19** (potenciado por **Vite** para compilación rápida).
-*   **Estilos:** **Tailwind CSS** para un diseño moderno, responsivo y "glassmorphic".
-*   **Iconografía:** Lucide-React.
-*   **Gráficos:** Recharts para visualización de datos.
+Desarrollar un sistema web integral que optimice la administración operativa y comercial de tiendas tecnológicas.
 
-### **Back-End (Lógica de Servidor)**
-*   **Lenguaje:** **Python 3.x**.
-*   **Framework:** **FastAPI**. Elegido por su velocidad y manejo nativo de operaciones asíncronas.
-*   **Seguridad:** Encriptación de contraseñas con **BCrypt** y validación de esquemas con Pydantic.
-*   **Generación de Reportes:** ReportLab para exportación de PDF profesional.
+Objetivos Específicos
+Automatizar el control de inventarios.
+Mejorar la velocidad de atención en ventas.
+Reducir errores manuales.
+Generar reportes inteligentes.
+Implementar seguridad y auditoría.
+Facilitar la toma de decisiones mediante métricas visuales.
+🏗️ Arquitectura Tecnológica
+🔵 Frontend
+Tecnología	Descripción
+React 19	Framework moderno para interfaces dinámicas
+TypeScript	Tipado fuerte y escalabilidad
+Vite	Compilación ultrarrápida
+Tailwind CSS	Diseño responsivo moderno
+Lucide React	Iconografía profesional
+Recharts	Dashboards y métricas gráficas
+🟣 Backend
+Tecnología	Descripción
+Python 3.x	Lenguaje principal del servidor
+FastAPI	API REST rápida y asíncrona
+Pydantic	Validación de datos
+BCrypt	Encriptación de contraseñas
+ReportLab	Exportación PDF profesional
+🟢 Base de Datos
+Tecnología	Descripción
+PostgreSQL	Motor relacional robusto
+Supabase	Infraestructura cloud
+SQLAlchemy	ORM para manejo de entidades
+⚙️ Arquitectura del Sistema
+📊 Modelo Relacional Principal
+🧩 Modelos Principales
+👤 Usuario
 
-### **Base de Datos e Infraestructura**
-*   **Motor:** **PostgreSQL**.
-*   **Servidor de Base de Datos:** **Supabase** (Base de datos relacional en la nube).
-*   **ORM:** **SQLAlchemy** para el mapeo objeto-relacional.
+Gestión de autenticación, permisos y roles.
 
----
+Roles:
+Administrador
+Cajero
+Cliente
+📦 Producto
 
-## 3. Arquitectura del Sistema (Clases y Modelos)
-El sistema se basa en un modelo relacional sólido definido en `models.py`:
+Control total de productos tecnológicos.
 
-*   **Usuario:** Gestiona perfiles de acceso (Admin, Cajero, Cliente) y estados de cuenta.
-*   **Producto:** Controla SKU, categorías, precios y niveles de stock.
-*   **Proveedor:** Registro de contactos y empresas que suministran los productos.
-*   **Cliente:** Base de datos de clientes con información de facturación (NIT/RFC).
-*   **Venta:** Cabecera de transacciones que registra totales, impuestos y métodos de pago.
-*   **DetalleVenta:** Registro granular de productos vendidos, incluyendo **números de serie** y **garantías aplicadas**.
-*   **MovimientoInventario:** Auditoría de entradas y salidas de stock.
-*   **Auditoria:** Registro histórico de acciones sensibles en el sistema (Login, Eliminación, Edición).
+Incluye:
+SKU
+Categoría
+Precio
+Garantía
+Stock
+🏢 Proveedor
 
----
+Administración de empresas proveedoras.
 
-## 4. Características Principales
-1.  **Gestión de Usuarios (CRUD):** Control total de accesos con protección de integridad (no permite borrar usuarios con historial de ventas).
-2.  **Punto de Venta (POS):** Interfaz fluida para realizar ventas en tiempo real con descuento automático de stock.
-3.  **Control de Inventario:** Alertas de stock bajo y trazabilidad de movimientos.
-4.  **Reportes Inteligentes:** Generación de facturas y reportes de inventario en PDF.
-5.  **Dashboard de Métricas:** Visualización de ventas diarias y productos más vendidos.
+🧾 Venta
 
----
+Registro financiero completo de transacciones.
 
-## 5. Instalación y Configuración
+📄 DetalleVenta
 
-### Requisitos Previos
-*   Node.js (v18 o superior)
-*   Python 3.10+
-*   Acceso a Internet (para la base de datos en Supabase)
+Información detallada de cada producto vendido.
 
-### Pasos para el Arranque
-1.  **Clonar el repositorio.**
-2.  **Configurar el Backend:**
-    ```bash
-    cd backend
-    pip install -r requirements.txt
-    python main.py
-    ```
-3.  **Configurar el Frontend:**
-    ```bash
-    npm install
-    npm run dev
-    ```
-4.  **Acceso Maestro:** El sistema incluye un archivo `Iniciar_TechStore.bat` diseñado para Windows que arranca ambos servidores automáticamente con un solo clic.
+📈 MovimientoInventario
 
----
+Auditoría de entradas y salidas de stock.
 
-## 6. Estructura de Carpetas
-```text
+🔐 Auditoría
+
+Registro histórico de acciones críticas:
+
+Login
+Eliminaciones
+Modificaciones
+Acciones administrativas
+🌟 Funcionalidades Principales
+🛒 Punto de Venta (POS)
+
+✅ Ventas rápidas
+✅ Actualización automática de stock
+✅ Cálculo de descuentos
+✅ Generación de facturas
+
+📦 Gestión de Inventario
+
+✅ Control de stock
+✅ Alertas automáticas
+✅ Historial de movimientos
+✅ Productos más vendidos
+
+👥 Gestión de Usuarios
+
+✅ CRUD completo
+✅ Control de permisos
+✅ Seguridad de acceso
+✅ Protección de integridad
+
+📊 Dashboard Inteligente
+Métricas Visuales
+Ventas diarias
+Ingresos mensuales
+Productos populares
+Stock crítico
+📉 Gráfico de Ventas Simulado
+Ventas Mensuales
+
+Enero      ███████████ 45%
+Febrero    ███████████████ 60%
+Marzo      ███████████████████ 78%
+Abril      ███████████████████████ 92%
+Mayo       █████████████████████████ 100%
+📈 Comparativa del Sistema
+Característica	Método Tradicional	TechStore Manager
+Control Manual	❌	✅
+Reportes Automáticos	❌	✅
+Seguridad de Usuarios	Baja	Alta
+Velocidad de Ventas	Media	Muy Alta
+Auditoría	❌	✅
+Escalabilidad	Baja	Alta
+🔒 Seguridad Implementada
+Características de Seguridad
+
+✅ Contraseñas encriptadas con BCrypt
+✅ Validación de esquemas con Pydantic
+✅ Protección de integridad relacional
+✅ Auditoría de acciones críticas
+✅ Gestión segura de sesiones
+
+🚀 Instalación del Proyecto
+📋 Requisitos Previos
+Node.js v18+
+Python 3.10+
+Conexión a Internet
+Cuenta Supabase
+⚙️ Configuración Backend
+cd backend
+
+pip install -r requirements.txt
+
+python main.py
+💻 Configuración Frontend
+npm install
+
+npm run dev
+▶️ Inicio Rápido
+
+El sistema incluye:
+
+Iniciar_TechStore.bat
+
+Este archivo permite iniciar automáticamente:
+
+✅ Backend
+✅ Frontend
+✅ Conexión de servicios
+
+con un solo clic.
+
+📂 Estructura del Proyecto
 TechStore-Manager/
-├── backend/            # Lógica en Python (FastAPI, Models, DB)
-├── src/                # Componentes y Pantallas en React
-│   ├── screens/        # Vistas principales (POS, Usuarios, Dashboard)
-│   ├── components/     # Elementos UI reutilizables
-│   └── api.ts          # Cliente de conexión API
-├── public/             # Activos estáticos
-└── Iniciar_TechStore.bat # Lanzador maestro del sistema
-```
+│
+├── backend/
+│   ├── models/
+│   ├── routes/
+│   ├── database/
+│   └── main.py
+│
+├── src/
+│   ├── screens/
+│   ├── components/
+│   ├── services/
+│   └── api.ts
+│
+├── public/
+│
+└── Iniciar_TechStore.bat
+📊 Flujo General del Sistema
+📌 Metodología de Desarrollo
+🔄 Metodología Ágil
 
----
-*Este proyecto es parte de la materia Ingeniería de Software (SIS324), enfocado en aplicar patrones de diseño y buenas prácticas de desarrollo ágil.*
+El proyecto fue desarrollado aplicando principios ágiles:
+
+Desarrollo incremental
+Modularidad
+Iteraciones rápidas
+Pruebas constantes
+Separación de responsabilidades
+🧪 Buenas Prácticas Aplicadas
+
+✅ Arquitectura modular
+✅ ORM relacional
+✅ Componentización React
+✅ Validación tipada
+✅ Seguridad en autenticación
+✅ Código escalable y mantenible
+
+📈 Beneficios del Sistema
+Beneficio	Impacto
+Automatización	Reduce errores
+Reportes	Mejora decisiones
+Inventario	Control preciso
+Seguridad	Protección de datos
+Escalabilidad	Crecimiento empresarial
+🔮 Futuras Mejoras
+Integración con pagos QR
+Sistema de facturación electrónica
+Inteligencia Artificial para predicción de ventas
+Aplicación móvil
+Notificaciones en tiempo real
+Dashboard avanzado con BI
+🏁 Conclusiones
+
+TechStore Manager representa una solución moderna, eficiente y escalable para la administración de tiendas tecnológicas.
+
+El sistema integra herramientas empresariales actuales bajo una arquitectura robusta, permitiendo:
+
+✅ Mejor control operativo
+✅ Automatización de procesos
+✅ Seguridad de información
+✅ Visualización inteligente de datos
+✅ Escalabilidad futura
+
+Además, el proyecto permitió aplicar conocimientos de:
+
+Ingeniería de Software
+Arquitectura Web
+Bases de Datos
+Desarrollo Full Stack
+Seguridad Informática
+Diseño de Sistemas Empresariales
+📚 Proyecto Académico
+
+Este proyecto fue desarrollado para la materia:
+
+SIS324 – Ingeniería de Software
+
+Aplicando:
+
+Buenas prácticas
+Patrones de diseño
+Arquitectura moderna
+Desarrollo ágil
+Sistemas empresariales reales
