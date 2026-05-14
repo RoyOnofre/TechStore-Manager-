@@ -73,11 +73,29 @@ export const api = {
   },
 
   eliminarUsuario: async (id: string) => {
-    const res = await fetch(`${API_URL}/usuarios/${id}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) throw new Error((await res.json()).detail);
-    return res.json();
+    try {
+      const res = await fetch(`${API_URL}/usuarios/${id}`, {
+        method: "DELETE",
+      });
+      
+      if (!res.ok) {
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await res.json();
+          throw new Error(errorData.detail || "Error al eliminar el usuario");
+        } else {
+          const textError = await res.text();
+          throw new Error(`Error del servidor (${res.status}): ${textError.substring(0, 100)}`);
+        }
+      }
+      
+      return res.json();
+    } catch (error: any) {
+      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+        throw new Error("No se pudo conectar con el servidor. Asegúrate de que el backend esté ejecutándose en el puerto 8004.");
+      }
+      throw error;
+    }
   },
 
   // ─────────────────────────────────────────

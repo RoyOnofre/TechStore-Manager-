@@ -44,6 +44,10 @@ const UserManagementScreen: React.FC = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
   const [modalSuccess, setModalSuccess] = useState('');
+  
+  // Auditoria
+  const [logs, setLogs] = useState<any[]>([]);
+  const [verLogs, setVerLogs] = useState(false);
 
   // Formulario crear/editar
   const [form, setForm] = useState({ nombre: '', correo: '', rol: 'cajero', estado: 'Activo', contrasena: '', confirmar: '' });
@@ -171,6 +175,15 @@ const UserManagementScreen: React.FC = () => {
     } catch (e: any) { setError(e.message); }
   };
 
+  const abrirLogs = async () => {
+    setVerLogs(true);
+    try {
+      const res = await fetch('http://localhost:8004/api/auditoria');
+      const data = await res.json();
+      setLogs(data);
+    } catch (e) { console.error(e); }
+  };
+
   // ── Render ────────────────────────────────────────────
   return (
     <div className="p-8 space-y-8" translate="no">
@@ -182,6 +195,13 @@ const UserManagementScreen: React.FC = () => {
           <p className="text-slate-400">Administra accesos y roles — conectado a la base de datos</p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={abrirLogs}
+            className="flex items-center gap-2 px-4 py-2 bg-surface-dark border border-primary/10 rounded-xl text-sm font-medium text-slate-300 hover:bg-violet-500/10 hover:text-violet-400 transition-all"
+          >
+            <Clock size={18} />
+            Ver Logs
+          </button>
           <button 
             onClick={() => api.descargarReporteUsuarios()}
             className="flex items-center gap-2 px-4 py-2 bg-surface-dark border border-primary/10 rounded-xl text-sm font-medium text-slate-300 hover:bg-primary/10 hover:text-primary transition-all"
@@ -468,6 +488,44 @@ const UserManagementScreen: React.FC = () => {
                   </form>
                 )}
 
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL DE LOGS */}
+        {verLogs && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+            <div className="bg-surface-dark border border-primary/20 rounded-3xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+              <div className="p-6 border-b border-primary/10 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Clock className="text-violet-400" /> Logs de Actividad del Sistema
+                </h2>
+                <button onClick={() => setVerLogs(false)} className="p-2 hover:bg-white/5 rounded-full"><X size={20}/></button>
+              </div>
+              <div className="p-6 overflow-y-auto space-y-3">
+                {logs.length === 0 ? (
+                  <p className="text-center py-10 text-slate-500">No hay registros aún.</p>
+                ) : (
+                  logs.map((log: any) => (
+                    <div key={log.id} className="p-3 bg-background-dark/50 border border-primary/5 rounded-xl flex justify-between items-center gap-4">
+                      <div>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          log.accion === 'ELIMINAR' ? 'bg-rose-500/20 text-rose-400' :
+                          log.accion === 'LOGIN' ? 'bg-emerald-500/20 text-emerald-400' :
+                          'bg-violet-500/20 text-violet-400'
+                        }`}>
+                          {log.accion}
+                        </span>
+                        <p className="text-sm text-slate-200 mt-1">{log.descripcion}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">Por: {log.usuario}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs text-slate-400 font-mono">{log.fecha}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

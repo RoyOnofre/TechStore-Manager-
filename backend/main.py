@@ -274,26 +274,61 @@ def cambiar_estado_usuario(usuario_id: str, bd: Session = Depends(obtener_bd)):
     
     usuario.estado = "Inactivo" if usuario.estado == "Activo" else "Activo"
     bd.commit()
+    
+    # Audit log
+    registrar_auditoria(bd, usuario_id, "ESTADO", f"Estado de {usuario.nombre} cambiado a {usuario.estado}.")
+    
     return {"mensaje": f"Usuario {usuario.estado.lower()} exitosamente", "estado": usuario.estado}
 
 @app.delete("/api/usuarios/{usuario_id}")
 def eliminar_usuario(usuario_id: str, bd: Session = Depends(obtener_bd)):
-    """Elimina un usuario del sistema. No se puede eliminar si tiene ventas asociadas."""
-    usuario = bd.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
-    if not usuario:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
-    # Validar que no tenga ventas asociadas (integridad referencial)
-    ventas_asociadas = bd.query(models.Venta).filter(models.Venta.usuario_id == usuario_id).count()
-    if ventas_asociadas > 0:
-        raise HTTPException(
-            status_code=400,
-            detail=f"No se puede eliminar: el usuario tiene {ventas_asociadas} venta(s) registrada(s). Desactívalo en su lugar."
-        )
-    
-    bd.delete(usuario)
-    bd.commit()
-    return {"mensaje": "Usuario eliminado exitosamente"}
+    """
+    Elimina un usuario del sistema. 
+    Borra automáticamente sus registros de auditoría para permitir la eliminación,
+    pero bloquea si tiene ventas o movimientos de inventario.
+    """
+    try:
+        usuario = bd.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        # 1. Bloqueo estricto por Ventas (Integridad de Facturación)
+        ventas_count = bd.query(models.Venta).filter(models.Venta.usuario_id == usuario_id).count()
+        if ventas_count > 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No se puede eliminar: el usuario tiene {ventas_count} venta(s). Usa 'Desactivar' para mantener el historial legal."
+            )
+        
+        # 2. Bloqueo por Movimientos de Inventario (Integridad de Stock)
+        movimientos_count = bd.query(models.MovimientoInventario).filter(models.MovimientoInventario.usuario_id == usuario_id).count()
+        if movimientos_count > 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No se puede eliminar: tiene {movimientos_count} movimientos de stock asociados. Desactívalo."
+            )
+
+        nombre_borrado = usuario.nombre
+        
+        # 3. Limpieza automática de Auditoría (Logs de actividad)
+        # Borramos sus logs para que no impidan el borrado del usuario (FK)
+        bd.query(models.Auditoria).filter(models.Auditoria.usuario_id == usuario_id).delete()
+
+        # 4. Registrar la eliminación en la auditoría general (sin referencia al usuario borrado)
+        registrar_auditoria(bd, None, "ELIMINAR", f"El usuario '{nombre_borrado}' fue eliminado permanentemente del sistema.")
+
+        # 5. Borrar el usuario y confirmar
+        bd.delete(usuario)
+        bd.commit()
+        
+        return {"mensaje": f"Usuario {nombre_borrado} eliminado exitosamente"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        bd.rollback()
+        print(f"Error en eliminar_usuario: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 @app.post("/api/auth/reset-contrasena")
 def reset_contrasena(datos: ResetContrasena, bd: Session = Depends(obtener_bd)):
