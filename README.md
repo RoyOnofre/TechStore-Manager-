@@ -1,10 +1,10 @@
-# 🚀 PROYECTO DE INGENIERÍA DE SOFTWARE – SIS324  
-# 💻 TechStore Manager  
+# 🚀 PROYECTO DE INGENIERÍA DE SOFTWARE – SIS324
+# 💻 TechStore Manager
 ### Sistema de Gestión Integral para Tiendas de Tecnología
 
 ---
 
-## 📌 Información General
+# 📌 Información General
 
 | Campo | Información |
 |---|---|
@@ -14,7 +14,7 @@
 | **Proyecto** | TechStore Manager |
 | **Tipo de Sistema** | Aplicación Web Empresarial |
 | **Arquitectura** | Cliente - Servidor |
-| **Base de Datos** | PostgreSQL (Supabase Cloud) |
+| **Base de Datos** | PostgreSQL + Supabase |
 
 ---
 
@@ -22,85 +22,83 @@
 
 | Integrante | Rol |
 |---|---|
-| **Coraite Yanaje Luz Clara** | Desarrollo Frontend |
-| **Muraña Pizarro Nayda Thatiana** | Base de Datos y QA |
+| **Coraite Yanaje Luz Clara** | Frontend Developer |
+| **Muraña Pizarro Nayda Thatiana** | Database & QA |
 | **Onofre Alanoca Roy** | Backend & Arquitectura |
 
 ---
 
 # 🧠 Descripción del Proyecto
 
-**TechStore Manager** es una plataforma web empresarial desarrollada para administrar de manera eficiente tiendas especializadas en productos tecnológicos.
+**TechStore Manager** es un sistema web empresarial desarrollado para optimizar la administración de tiendas tecnológicas.
 
-El sistema centraliza:
+La plataforma permite gestionar:
 
-✅ Gestión de inventarios  
-✅ Registro de ventas  
-✅ Administración de clientes  
-✅ Control de usuarios  
-✅ Reportes financieros  
-✅ Auditoría y trazabilidad  
+- 📦 Inventarios
+- 🛒 Ventas
+- 👥 Clientes
+- 🔐 Usuarios
+- 📊 Reportes
+- 📈 Métricas de negocio
+- 🧾 Facturación
+- 🔍 Auditoría de acciones
 
-La solución fue diseñada bajo principios de:
-
-- Arquitectura escalable
-- Seguridad de datos
-- Alto rendimiento
-- Experiencia de usuario moderna
-- Desarrollo ágil
+El sistema fue diseñado utilizando tecnologías modernas y una arquitectura escalable enfocada en rendimiento, seguridad y experiencia de usuario.
 
 ---
 
-# 🎯 Objetivos del Sistema
+# 🎯 Objetivos del Proyecto
 
 ## Objetivo General
-Desarrollar un sistema web integral que optimice la administración operativa y comercial de tiendas tecnológicas.
+
+Desarrollar un sistema integral para automatizar y optimizar los procesos administrativos y comerciales de tiendas tecnológicas.
 
 ## Objetivos Específicos
 
-- Automatizar el control de inventarios.
-- Mejorar la velocidad de atención en ventas.
-- Reducir errores manuales.
-- Generar reportes inteligentes.
-- Implementar seguridad y auditoría.
-- Facilitar la toma de decisiones mediante métricas visuales.
+- Automatizar el control de inventario
+- Mejorar la velocidad de atención
+- Reducir errores manuales
+- Centralizar información
+- Generar reportes inteligentes
+- Implementar seguridad avanzada
+- Visualizar métricas en tiempo real
 
 ---
 
-# 🏗️ Arquitectura Tecnológica
+# 🏗️ Tecnologías Utilizadas
 
-## 🔵 Frontend
+# 🔵 Frontend
 
-| Tecnología | Descripción |
+| Tecnología | Uso |
 |---|---|
-| **React 19** | Framework moderno para interfaces dinámicas |
-| **TypeScript** | Tipado fuerte y escalabilidad |
-| **Vite** | Compilación ultrarrápida |
-| **Tailwind CSS** | Diseño responsivo moderno |
-| **Lucide React** | Iconografía profesional |
-| **Recharts** | Dashboards y métricas gráficas |
+| React 19 | Interfaces dinámicas |
+| TypeScript | Tipado seguro |
+| Vite | Compilación rápida |
+| Tailwind CSS | Diseño moderno |
+| Lucide React | Iconografía |
+| Recharts | Gráficos y métricas |
 
 ---
 
-## 🟣 Backend
+# 🟣 Backend
 
-| Tecnología | Descripción |
+| Tecnología | Uso |
 |---|---|
-| **Python 3.x** | Lenguaje principal del servidor |
-| **FastAPI** | API REST rápida y asíncrona |
-| **Pydantic** | Validación de datos |
-| **BCrypt** | Encriptación de contraseñas |
-| **ReportLab** | Exportación PDF profesional |
+| Python 3.x | Lógica del servidor |
+| FastAPI | API REST |
+| SQLAlchemy | ORM |
+| Pydantic | Validación |
+| BCrypt | Seguridad |
+| ReportLab | Exportación PDF |
 
 ---
 
-## 🟢 Base de Datos
+# 🟢 Base de Datos
 
-| Tecnología | Descripción |
+| Tecnología | Uso |
 |---|---|
-| **PostgreSQL** | Motor relacional robusto |
-| **Supabase** | Infraestructura cloud |
-| **SQLAlchemy** | ORM para manejo de entidades |
+| PostgreSQL | Motor relacional |
+| Supabase | Infraestructura cloud |
 
 ---
 
@@ -110,6 +108,59 @@ Desarrollar un sistema web integral que optimice la administración operativa y 
 
 ```mermaid
 erDiagram
+
+USUARIO {
+    int id_usuario
+    string nombre
+    string email
+    string password
+    string rol
+}
+
+CLIENTE {
+    int id_cliente
+    string nombre
+    string telefono
+    string nit
+}
+
+PRODUCTO {
+    int id_producto
+    string nombre
+    string categoria
+    float precio
+    int stock
+}
+
+PROVEEDOR {
+    int id_proveedor
+    string empresa
+    string telefono
+}
+
+VENTA {
+    int id_venta
+    date fecha
+    float total
+}
+
+DETALLEVENTA {
+    int id_detalle
+    int cantidad
+    float subtotal
+}
+
+MOVIMIENTOINVENTARIO {
+    int id_movimiento
+    string tipo
+    int cantidad
+}
+
+AUDITORIA {
+    int id_auditoria
+    string accion
+    date fecha
+}
 
 USUARIO ||--o{ VENTA : realiza
 CLIENTE ||--o{ VENTA : compra
@@ -122,105 +173,57 @@ PROVEEDOR ||--o{ PRODUCTO : suministra
 
 ---
 
-# 🧩 Modelos Principales
+# 🧩 Módulos Principales
 
-## 👤 Usuario
-Gestión de autenticación, permisos y roles.
+# 👤 Gestión de Usuarios
 
-### Roles:
-- Administrador
-- Cajero
-- Cliente
-
----
-
-## 📦 Producto
-Control total de productos tecnológicos.
-
-### Incluye:
-- SKU
-- Categoría
-- Precio
-- Garantía
-- Stock
+- CRUD completo
+- Roles y permisos
+- Protección de integridad
+- Autenticación segura
 
 ---
 
-## 🏢 Proveedor
-Administración de empresas proveedoras.
+# 📦 Gestión de Productos
+
+- Registro de productos
+- Control de stock
+- Categorías
+- Garantías
 
 ---
-
-## 🧾 Venta
-Registro financiero completo de transacciones.
-
----
-
-## 📄 DetalleVenta
-Información detallada de cada producto vendido.
-
----
-
-## 📈 MovimientoInventario
-Auditoría de entradas y salidas de stock.
-
----
-
-## 🔐 Auditoría
-Registro histórico de acciones críticas:
-
-- Login
-- Eliminaciones
-- Modificaciones
-- Acciones administrativas
-
----
-
-# 🌟 Funcionalidades Principales
 
 # 🛒 Punto de Venta (POS)
 
-✅ Ventas rápidas  
-✅ Actualización automática de stock  
-✅ Cálculo de descuentos  
-✅ Generación de facturas  
+- Registro rápido de ventas
+- Actualización automática de inventario
+- Facturación
+- Descuentos
 
 ---
 
-# 📦 Gestión de Inventario
-
-✅ Control de stock  
-✅ Alertas automáticas  
-✅ Historial de movimientos  
-✅ Productos más vendidos  
-
----
-
-# 👥 Gestión de Usuarios
-
-✅ CRUD completo  
-✅ Control de permisos  
-✅ Seguridad de acceso  
-✅ Protección de integridad  
-
----
-
-# 📊 Dashboard Inteligente
-
-## Métricas Visuales
+# 📈 Dashboard Inteligente
 
 - Ventas diarias
-- Ingresos mensuales
-- Productos populares
-- Stock crítico
+- Productos más vendidos
+- Métricas financieras
+- Alertas de stock
 
 ---
 
-# 📉 Gráfico de Ventas Simulado
+# 🔐 Auditoría y Seguridad
+
+- Registro histórico
+- Control de accesos
+- Logs de acciones críticas
+
+---
+
+# 📉 Estadísticas del Sistema
+
+## Ventas Mensuales
 
 ```text
-Ventas Mensuales
-
 Enero      ███████████ 45%
 Febrero    ███████████████ 60%
 Marzo      ███████████████████ 78%
@@ -230,28 +233,26 @@ Mayo       ███████████████████████
 
 ---
 
-# 📈 Comparativa del Sistema
+# 📊 Comparativa del Sistema
 
-| Característica | Método Tradicional | TechStore Manager |
+| Característica | Sistema Tradicional | TechStore Manager |
 |---|---|---|
 | Control Manual | ❌ | ✅ |
 | Reportes Automáticos | ❌ | ✅ |
-| Seguridad de Usuarios | Baja | Alta |
-| Velocidad de Ventas | Media | Muy Alta |
-| Auditoría | ❌ | ✅ |
+| Seguridad | Baja | Alta |
 | Escalabilidad | Baja | Alta |
+| Dashboard | ❌ | ✅ |
+| Auditoría | ❌ | ✅ |
 
 ---
 
 # 🔒 Seguridad Implementada
 
-## Características de Seguridad
-
-✅ Contraseñas encriptadas con BCrypt  
-✅ Validación de esquemas con Pydantic  
-✅ Protección de integridad relacional  
-✅ Auditoría de acciones críticas  
-✅ Gestión segura de sesiones  
+✅ Encriptación BCrypt  
+✅ Validación con Pydantic  
+✅ Integridad Relacional  
+✅ Protección de usuarios  
+✅ Auditoría avanzada  
 
 ---
 
@@ -262,13 +263,13 @@ Mayo       ███████████████████████
 ```bash
 Node.js v18+
 Python 3.10+
-Conexión a Internet
+PostgreSQL
 Cuenta Supabase
 ```
 
 ---
 
-# ⚙️ Configuración Backend
+# ⚙️ Configuración del Backend
 
 ```bash
 cd backend
@@ -280,7 +281,7 @@ python main.py
 
 ---
 
-# 💻 Configuración Frontend
+# 💻 Configuración del Frontend
 
 ```bash
 npm install
@@ -290,21 +291,17 @@ npm run dev
 
 ---
 
-# ▶️ Inicio Rápido
-
-El sistema incluye:
+# ▶️ Inicio Automático
 
 ```bash
 Iniciar_TechStore.bat
 ```
 
-Este archivo permite iniciar automáticamente:
+Este archivo inicia automáticamente:
 
-✅ Backend  
-✅ Frontend  
-✅ Conexión de servicios  
-
-con un solo clic.
+- Backend
+- Frontend
+- Servicios principales
 
 ---
 
@@ -335,16 +332,17 @@ TechStore-Manager/
 # 📊 Flujo General del Sistema
 
 ```mermaid
-flowchart LR
+graph TD
 
 A[Cliente] --> B[Frontend React]
-B --> C[API FastAPI]
-C --> D[(PostgreSQL Supabase)]
+B --> C[FastAPI Backend]
+C --> D[(PostgreSQL / Supabase)]
 
-D --> E[Inventario]
-D --> F[Ventas]
-D --> G[Usuarios]
+D --> E[Gestión de Inventario]
+D --> F[Gestión de Ventas]
+D --> G[Gestión de Usuarios]
 D --> H[Auditoría]
+D --> I[Dashboard]
 ```
 
 ---
@@ -353,84 +351,78 @@ D --> H[Auditoría]
 
 ## 🔄 Metodología Ágil
 
-El proyecto fue desarrollado aplicando principios ágiles:
+El sistema fue desarrollado aplicando:
 
 - Desarrollo incremental
-- Modularidad
-- Iteraciones rápidas
-- Pruebas constantes
-- Separación de responsabilidades
+- Arquitectura modular
+- Iteraciones ágiles
+- Testing continuo
+- Buenas prácticas
 
 ---
 
-# 🧪 Buenas Prácticas Aplicadas
+# 🧪 Buenas Prácticas Implementadas
 
-✅ Arquitectura modular  
-✅ ORM relacional  
+✅ Arquitectura escalable  
+✅ Código modular  
 ✅ Componentización React  
-✅ Validación tipada  
-✅ Seguridad en autenticación  
-✅ Código escalable y mantenible  
+✅ API REST estructurada  
+✅ Seguridad avanzada  
+✅ ORM relacional  
 
 ---
 
 # 📈 Beneficios del Sistema
 
-| Beneficio | Impacto |
+| Beneficio | Resultado |
 |---|---|
 | Automatización | Reduce errores |
-| Reportes | Mejora decisiones |
-| Inventario | Control preciso |
-| Seguridad | Protección de datos |
+| Dashboard | Mejora decisiones |
+| Seguridad | Protege datos |
+| Inventario | Mayor control |
 | Escalabilidad | Crecimiento empresarial |
 
 ---
 
 # 🔮 Futuras Mejoras
 
-- Integración con pagos QR
-- Sistema de facturación electrónica
-- Inteligencia Artificial para predicción de ventas
-- Aplicación móvil
-- Notificaciones en tiempo real
-- Dashboard avanzado con BI
+- 📱 Aplicación móvil
+- 💳 Pagos QR
+- 🤖 Inteligencia Artificial
+- ☁️ Microservicios
+- 📡 Notificaciones en tiempo real
+- 📈 Business Intelligence
 
 ---
 
 # 🏁 Conclusiones
 
-TechStore Manager representa una solución moderna, eficiente y escalable para la administración de tiendas tecnológicas.
+TechStore Manager es una solución moderna y escalable orientada a mejorar la administración de tiendas tecnológicas.
 
-El sistema integra herramientas empresariales actuales bajo una arquitectura robusta, permitiendo:
+El proyecto integra herramientas empresariales actuales bajo una arquitectura robusta y segura, permitiendo optimizar procesos operativos y mejorar la toma de decisiones mediante visualización inteligente de datos.
 
-✅ Mejor control operativo  
-✅ Automatización de procesos  
-✅ Seguridad de información  
-✅ Visualización inteligente de datos  
-✅ Escalabilidad futura  
-
-Además, el proyecto permitió aplicar conocimientos de:
+Además, permitió aplicar conocimientos de:
 
 - Ingeniería de Software
 - Arquitectura Web
-- Bases de Datos
 - Desarrollo Full Stack
+- Bases de Datos
 - Seguridad Informática
-- Diseño de Sistemas Empresariales
+- Sistemas Empresariales
 
 ---
 
 # 📚 Proyecto Académico
 
-Este proyecto fue desarrollado para la materia:
+Proyecto desarrollado para la materia:
 
-## SIS324 – Ingeniería de Software
+# SIS324 – Ingeniería de Software
 
 Aplicando:
 
+- Arquitectura moderna
 - Buenas prácticas
 - Patrones de diseño
-- Arquitectura moderna
 - Desarrollo ágil
 - Sistemas empresariales reales
 
